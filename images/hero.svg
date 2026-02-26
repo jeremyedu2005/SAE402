@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Corps -->
+  <rect x="35" y="30" width="30" height="35" rx="5" fill="#4169E1"/>
+  
+  <!-- Tête -->
+  <circle cx="50" cy="20" r="12" fill="#4169E1"/>
+  
+  <!-- Casque -->
+  <path d="M 38 12 Q 50 5 62 12 L 60 15 Q 50 10 40 15 Z" fill="#1E90FF"/>
+  
+  <!-- Épée -->
+  <rect x="68" y="25" width="5" height="25" fill="#FFD700" rx="2"/>
+  <polygon points="70,20 75,25 65,25" fill="#FFD700"/>
+  
+  <!-- Jambes -->
+  <rect x="40" y="65" width="8" height="20" fill="#2E5090"/>
+  <rect x="52" y="65" width="8" height="20" fill="#2E5090"/>
+  
+  <!-- Yeux -->
+  <circle cx="46" cy="18" r="1.5" fill="white"/>
+  <circle cx="54" cy="18" r="1.5" fill="white"/>
+</svg>

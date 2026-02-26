@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Mini Jeu Combat</title>
+
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #222;
+        color: white;
+        font-family: Arial;
+    }
+
+    .arena {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+    }
+
+    .character {
+        width: 80px;
+        height: 80px;
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+    }
+
+    .hero {
+        background-image: url("../images/hero.svg");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+
+    .mage {
+        background-image: url("../images/mage.svg");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        right: 100px;
+        top: 200px;
+    }
+
+    .pv {
+        position: absolute;
+        top: -25px;
+        font-size: 12px;
+    }
+
+    button {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        padding: 10px;
+        cursor: pointer;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="arena">
+
+    <div class="character hero" id="hero">
+        <div class="pv" id="heroPV"></div>
+    </div>
+
+    <div class="character mage" id="mage">
+        <div class="pv" id="magePV"></div>
+    </div>
+
+</div>
+<script src="../script/script.js"></script>
+</body>
+</html>

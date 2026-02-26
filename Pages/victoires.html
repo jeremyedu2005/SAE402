@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Victoire - Retro Battle</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .victory-page {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 350px);
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 30px;
+            color: #ffcc00;
+            text-shadow: 0 0 20px #ffcc00, 0 0 40px #ff00ff;
+            animation: titleBounce 0.6s ease-in-out;
+        }
+
+        .winner-name {
+            font-size: 2.5em;
+            color: #00ffff;
+            text-shadow: 0 0 15px #00ffff;
+            margin: 20px 0;
+        }
+
+        .victory-message {
+            font-size: 1.3em;
+            color: #ffffff;
+            margin: 30px 0;
+            line-height: 1.6;
+        }
+
+        .btn-rejouer {
+            margin-top: 40px;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px #00ffff;
+        }
+
+        .btn-rejouer:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px #ff00ff;
+        }
+
+        @keyframes titleBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="main-header">
+    <div class="header-content">
+        <div class="logo">
+            <span class="logo-icon">⚔️</span>
+            <span class="logo-text">RETRO BATTLE</span>
+            <span class="logo-icon">⚔️</span>
+        </div>
+        <nav class="nav-menu">
+            <a href="../index.html" class="nav-link">Accueil</a>
+            <a href="classes.html" class="nav-link">Classes</a>
+            <a href="about.html" class="nav-link">À propos</a>
+        </nav>
+    </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main class="main-content">
+    <div class="victory-page">
+        <h1>🎉 VICTOIRE ! 🎉</h1>
+        <div class="winner-name" id="winnerName"></div>
+        <div class="victory-message">
+            a gagné la partie !<br>
+            Félicitations, tu as remporté le combat !
+        </div>
+        <button class="btn-rejouer" onclick="rejouer()">Rejouer</button>
+    </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="main-footer">
+    <div class="footer-content">
+        <div class="footer-section">
+            <h4>Retro Battle</h4>
+            <p>Un jeu de combat aux styles rétro. Créé avec passion pour les amateurs de pixel art.</p>
+        </div>
+        <div class="footer-section">
+            <h4>Navigation</h4>
+            <ul class="footer-links">
+                <li><a href="../index.html">Accueil</a></li>
+                <li><a href="classes.html">Classes</a></li>
+                <li><a href="about.html">À propos</a></li>
+            </ul>
+        </div>
+        <div class="footer-section">
+            <h4>Contact</h4>
+            <p>Email: <a href="mailto:info@retrobattle.com">info@retrobattle.com</a></p>
+            <p>© 2026 Retro Battle. Tous droits réservés.</p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>Faites l'expérience du jeu rétro comme jamais auparavant</p>
+    </div>
+</footer>
+
+<script>
+    window.addEventListener("DOMContentLoaded", () => {
+        const winner = localStorage.getItem("winner");
+        if (winner) {
+            document.getElementById("winnerName").textContent = winner;
+        }
+    });
+
+    function rejouer() {
+        localStorage.removeItem("winner");
+        window.location.href = "classes.html";
+    }
+</script>
+
+</body>
+</html>

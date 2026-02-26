@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retro Battle - Jeu de Combat Rétro</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="main-header">
+    <div class="header-content">
+        <div class="logo">
+            <span class="logo-icon">⚔️</span>
+            <span class="logo-text">RETRO BATTLE</span>
+            <span class="logo-icon">⚔️</span>
+        </div>
+        <nav class="nav-menu">
+            <a href="#home" class="nav-link active">Accueil</a>
+            <a href="Pages/classes.html" class="nav-link">Classes</a>
+            <a href="Pages/about.html" class="nav-link">À propos</a>
+        </nav>
+    </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main class="main-content">
+
+    <!-- HERO SECTION -->
+    <section class="hero-section" id="home">
+        <div class="hero-text">
+            <h1 class="hero-title">BIENVENUE DANS</h1>
+            <h2 class="hero-subtitle">RETRO BATTLE</h2>
+            <p class="hero-description">Un jeu de combat au style rétro pixel. Choisis ta classe et affronte tes adversaires !</p>
+            <div class="hero-buttons">
+                <a href="Pages/classes.html" class="btn-hero btn-primary">🎮 JOUER MAINTENANT 🎮</a>
+                <a href="Pages/about.html" class="btn-hero btn-secondary">📖 EN SAVOIR PLUS 📖</a>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="main-footer">
+    <div class="footer-content">
+        <div class="footer-section">
+            <h4>Retro Battle</h4>
+            <p>Un jeu de combat aux styles rétro. Créé avec passion pour les amateurs de pixel art.</p>
+        </div>
+        <div class="footer-section">
+            <h4>Navigation</h4>
+            <ul class="footer-links">
+                <li><a href="Pages/index.html">Accueil</a></li>
+                <li><a href="Pages/classes.html">Classes</a></li>
+                <li><a href="Pages/about.html">À propos</a></li>
+            </ul>
+        </div>
+        <div class="footer-section">
+            <h4>Contact</h4>
+            <p>Email: <a href="mailto:info@retrobattle.com">info@retrobattle.com</a></p>
+            <p>© 2026 Retro Battle. Tous droits réservés.</p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>Faites l'expérience du jeu rétro comme jamais auparavant</p>
+    </div>
+</footer>
+
+<script>
+// Navigation smooth
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+        const href = link.getAttribute('href');
+        if (href.startsWith('#')) {
+            e.preventDefault();
+            const section = document.querySelector(href);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+        
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+    });
+});
+</script>
+
+</body>
+</html>
+</html>
