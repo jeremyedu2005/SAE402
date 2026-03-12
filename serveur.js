@@ -7,71 +7,44 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 //==============================================
-// CLASSE PERSONNAGE (logique serveur)
-//==============================================
-class Personnage {
-    constructor(nom, pv, attaqueN, attaqueSPE, resistance, range) {
-        this.nom = nom;
-        this.pv = pv;
-        this.pvMax = pv;
-        this.attaqueN = attaqueN;
-        this.attaqueSPE = attaqueSPE;
-        this.resistance = resistance;
-        this.range = range;
-    }
-
-    attaquer(cible) {
-        const degats = Math.max(this.attaqueN - cible.resistance, 0);
-        cible.pv -= degats;
-        if (cible.pv < 0) cible.pv = 0;
-        return degats;
-    }
-
-    attaqueSpeciale(cible) {
-        const degats = Math.max(this.attaqueSPE - cible.resistance / 2, 0);
-        cible.pv -= degats;
-        if (cible.pv < 0) cible.pv = 0;
-        return degats;
-    }
-}
-
-//==============================================
-// ÉTAT DU JEU
+// CONSTANTES
 //==============================================
 const SPEED = 4;
 const ARENA_WIDTH = 1280;
 const ARENA_HEIGHT = 720;
 const CHAR_SIZE = 80;
 
-let gameState = null;
+const CLASSES = {
+    hero:     { pv: 300, attaqueN: 40, attaqueSPE: 60, resistance: 20, range: 100,  couleur: "#e74c3c" },
+    mage:     { pv: 200, attaqueN: 40, attaqueSPE: 80, resistance: 10, range: 250,  couleur: "#9b59b6" },
+    archer:   { pv: 220, attaqueN: 35, attaqueSPE: 70, resistance: 12, range: 350,  couleur: "#27ae60" },
+    guerrier: { pv: 350, attaqueN: 50, attaqueSPE: 55, resistance: 30, range: 90,   couleur: "#e67e22" },
+};
 
-function creerEtatInitial() {
+//==============================================
+// ÉTAT DU JEU
+//==============================================
+const joueurs = {};      // socketId -> personnage
+const keysPressed = {};  // socketId -> { keys }
+
+function creerPersonnage(socketId, nomJoueur, classe) {
+    const stats = CLASSES[classe] || CLASSES.hero;
+    const x = Math.floor(Math.random() * (ARENA_WIDTH - CHAR_SIZE - 200)) + 100;
+    const y = Math.floor(Math.random() * (ARENA_HEIGHT - CHAR_SIZE - 200)) + 100;
+
     return {
-        hero: {
-            nom: "Hero",
-            pv: 300,
-            pvMax: 300,
-            attaqueN: 40,
-            attaqueSPE: 60,
-            resistance: 20,
-            range: 100,
-            x: 100,
-            y: 200,
-        },
-        mage: {
-            nom: "Mage",
-            pv: 200,
-            pvMax: 200,
-            attaqueN: 40,
-            attaqueSPE: 80,
-            resistance: 10,
-            range: 250,
-            x: ARENA_WIDTH - CHAR_SIZE - 100,
-            y: 200,
-        },
-        // socketId -> classe jouée
-        joueurs: {},
-        winner: null,
+        id: socketId,
+        nomJoueur,
+        classe,
+        pv: stats.pv,
+        pvMax: stats.pv,
+        attaqueN: stats.attaqueN,
+        attaqueSPE: stats.attaqueSPE,
+        resistance: stats.resistance,
+        range: stats.range,
+        couleur: stats.couleur,
+        x,
+        y,
     };
 }
 
@@ -80,56 +53,23 @@ function calculerDistance(p1, p2) {
     const cy1 = p1.y + CHAR_SIZE / 2;
     const cx2 = p2.x + CHAR_SIZE / 2;
     const cy2 = p2.y + CHAR_SIZE / 2;
-    const dx = cx2 - cx1;
-    const dy = cy2 - cy1;
-    return Math.sqrt(dx * dx + dy * dy);
-}
-
-function checkVictory() {
-    if (gameState.hero.pv <= 0) {
-        gameState.winner = "Mage";
-        io.emit("game_over", { winner: "Mage" });
-    } else if (gameState.mage.pv <= 0) {
-        gameState.winner = "Hero";
-        io.emit("game_over", { winner: "Hero" });
-    }
+    return Math.sqrt((cx2 - cx1) ** 2 + (cy2 - cy1) ** 2);
 }
 
 function broadcastGameState() {
-    io.emit("game_state", {
-        hero: {
-            nom: gameState.hero.nom,
-            pv: gameState.hero.pv,
-            pvMax: gameState.hero.pvMax,
-            x: gameState.hero.x,
-            y: gameState.hero.y,
-            range: gameState.hero.range,
-        },
-        mage: {
-            nom: gameState.mage.nom,
-            pv: gameState.mage.pv,
-            pvMax: gameState.mage.pvMax,
-            x: gameState.mage.x,
-            y: gameState.mage.y,
-            range: gameState.mage.range,
-        },
-        winner: gameState.winner,
-    });
+    io.emit("game_state", { joueurs: Object.values(joueurs) });
 }
 
 //==============================================
-// BOUCLE DE JEU SERVEUR
+// BOUCLE DE JEU (60 FPS)
 //==============================================
-const keysPressed = {}; // socketId -> { keys }
-
 function serverGameLoop() {
-    if (!gameState || gameState.winner) return;
+    let dirty = false;
 
     for (const [socketId, keys] of Object.entries(keysPressed)) {
-        const classe = gameState.joueurs[socketId];
-        if (!classe) continue;
+        const perso = joueurs[socketId];
+        if (!perso || perso.pv <= 0) continue;
 
-        const perso = gameState[classe];
         let moveX = 0;
         let moveY = 0;
 
@@ -138,78 +78,51 @@ function serverGameLoop() {
         if (keys["q"]) moveX -= 1;
         if (keys["d"]) moveX += 1;
 
-        if (moveX !== 0 || moveY !== 0) {
-            const length = Math.sqrt(moveX * moveX + moveY * moveY);
-            moveX /= length;
-            moveY /= length;
-        }
+        if (moveX === 0 && moveY === 0) continue;
 
-        perso.x += moveX * SPEED;
-        perso.y += moveY * SPEED;
-
-        const maxX = ARENA_WIDTH - CHAR_SIZE;
-        const maxY = ARENA_HEIGHT - CHAR_SIZE;
-
-        if (perso.x < 0) perso.x = 0;
-        if (perso.y < 0) perso.y = 0;
-        if (perso.x > maxX) perso.x = maxX;
-        if (perso.y > maxY) perso.y = maxY;
+        dirty = true;
+        const length = Math.sqrt(moveX * moveX + moveY * moveY);
+        perso.x = Math.max(0, Math.min(ARENA_WIDTH - CHAR_SIZE, perso.x + (moveX / length) * SPEED));
+        perso.y = Math.max(0, Math.min(ARENA_HEIGHT - CHAR_SIZE, perso.y + (moveY / length) * SPEED));
     }
 
-    broadcastGameState();
+    if (dirty) broadcastGameState();
 }
 
-setInterval(serverGameLoop, 1000 / 60); // 60 FPS
+setInterval(serverGameLoop, 1000 / 60);
 
 //==============================================
 // CONNEXIONS SOCKET
 //==============================================
 io.on("connection", (socket) => {
-    console.log("Nouveau client connecté :", socket.id);
+    console.log(`[Connexion] Nouveau client : ${socket.id}`);
 
-    // Rejoindre la partie en choisissant sa classe
-    socket.on("rejoindre", ({ classe }) => {
-        if (!gameState) {
-            gameState = creerEtatInitial();
-        }
-
-        // Vérifie si la classe est déjà prise
-        const classesPrises = Object.values(gameState.joueurs);
-        if (classesPrises.includes(classe)) {
-            socket.emit("erreur", { message: `La classe ${classe} est déjà prise.` });
+    socket.on("rejoindre", ({ nomJoueur, classe }) => {
+        if (!CLASSES[classe]) {
+            socket.emit("erreur", { message: `Classe inconnue : ${classe}` });
             return;
         }
 
-        gameState.joueurs[socket.id] = classe;
+        const perso = creerPersonnage(socket.id, nomJoueur, classe);
+        joueurs[socket.id] = perso;
         keysPressed[socket.id] = {};
 
-        console.log(`Joueur ${socket.id} joue le ${classe}`);
-        socket.emit("rejoindre_ok", {
-            classe,
-            hero: gameState.hero,
-            mage: gameState.mage,
-        });
+        console.log(`[Joueur connecté] ${nomJoueur} (${classe}) — ID: ${socket.id}`);
 
+        socket.emit("rejoindre_ok", { monId: socket.id, perso });
         broadcastGameState();
     });
 
-    // Mise à jour des touches appuyées
     socket.on("keys_update", ({ keys }) => {
         if (keysPressed[socket.id] !== undefined) {
             keysPressed[socket.id] = keys;
         }
     });
 
-    // Attaque normale
-    socket.on("attaque", () => {
-        if (!gameState || gameState.winner) return;
-
-        const classe = gameState.joueurs[socket.id];
-        if (!classe) return;
-
-        const attaquant = gameState[classe];
-        const cibleNom = classe === "hero" ? "mage" : "hero";
-        const cible = gameState[cibleNom];
+    socket.on("attaque", ({ cibleId }) => {
+        const attaquant = joueurs[socket.id];
+        const cible = joueurs[cibleId];
+        if (!attaquant || !cible || attaquant.pv <= 0 || cible.pv <= 0) return;
 
         const distance = calculerDistance(attaquant, cible);
         if (distance > attaquant.range) {
@@ -218,24 +131,26 @@ io.on("connection", (socket) => {
         }
 
         const degats = Math.max(attaquant.attaqueN - cible.resistance, 0);
-        cible.pv -= degats;
-        if (cible.pv < 0) cible.pv = 0;
+        cible.pv = Math.max(0, cible.pv - degats);
 
-        console.log(`${attaquant.nom} attaque ${cible.nom} pour ${degats} dégâts (PV restants: ${cible.pv})`);
-        checkVictory();
+        console.log(`[Attaque] ${attaquant.nomJoueur} (${attaquant.classe}) → ${cible.nomJoueur} : ${degats} dégâts (PV: ${cible.pv}/${cible.pvMax})`);
+
+        if (cible.pv <= 0) {
+            console.log(`[Mort] ${cible.nomJoueur} éliminé par ${attaquant.nomJoueur} !`);
+            io.emit("joueur_elimine", {
+                victimeId: cibleId,
+                tueurNom: attaquant.nomJoueur,
+                victimeNom: cible.nomJoueur,
+            });
+        }
+
         broadcastGameState();
     });
 
-    // Attaque spéciale
-    socket.on("attaque_speciale", () => {
-        if (!gameState || gameState.winner) return;
-
-        const classe = gameState.joueurs[socket.id];
-        if (!classe) return;
-
-        const attaquant = gameState[classe];
-        const cibleNom = classe === "hero" ? "mage" : "hero";
-        const cible = gameState[cibleNom];
+    socket.on("attaque_speciale", ({ cibleId }) => {
+        const attaquant = joueurs[socket.id];
+        const cible = joueurs[cibleId];
+        if (!attaquant || !cible || attaquant.pv <= 0 || cible.pv <= 0) return;
 
         const distance = calculerDistance(attaquant, cible);
         if (distance > attaquant.range) {
@@ -244,18 +159,32 @@ io.on("connection", (socket) => {
         }
 
         const degats = Math.max(attaquant.attaqueSPE - cible.resistance / 2, 0);
-        cible.pv -= degats;
-        if (cible.pv < 0) cible.pv = 0;
+        cible.pv = Math.max(0, cible.pv - degats);
 
-        console.log(`${attaquant.nom} attaque spéciale sur ${cible.nom} pour ${degats} dégâts (PV restants: ${cible.pv})`);
-        checkVictory();
+        console.log(`[Attaque Spé] ${attaquant.nomJoueur} (${attaquant.classe}) → ${cible.nomJoueur} : ${degats} dégâts (PV: ${cible.pv}/${cible.pvMax})`);
+
+        if (cible.pv <= 0) {
+            console.log(`[Mort] ${cible.nomJoueur} éliminé par ${attaquant.nomJoueur} !`);
+            io.emit("joueur_elimine", {
+                victimeId: cibleId,
+                tueurNom: attaquant.nomJoueur,
+                victimeNom: cible.nomJoueur,
+            });
+        }
+
         broadcastGameState();
     });
 
     socket.on("disconnect", () => {
-        console.log("Client déconnecté :", socket.id);
-        delete gameState?.joueurs[socket.id];
+        const perso = joueurs[socket.id];
+        const nom = perso ? `${perso.nomJoueur} (${perso.classe})` : socket.id;
+        console.log(`[Déconnexion] ${nom} a quitté la partie.`);
+
+        delete joueurs[socket.id];
         delete keysPressed[socket.id];
+
+        io.emit("joueur_parti", { id: socket.id });
+        broadcastGameState();
     });
 });
 
