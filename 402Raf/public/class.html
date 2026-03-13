@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choix de Classe — Arène Multijoueur</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: radial-gradient(circle at center, #000 0%, #111 50%, #000 100%);
+            color: #fff;
+            font-family: 'Orbitron', monospace;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 30% 30%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 70%, rgba(255, 68, 68, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(255, 255, 0, 0.05) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite alternate;
+            z-index: -1;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.7; }
+        }
+
+        .container {
+            position: relative;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 50px 20px;
+            text-align: center;
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #ff0000, #00ffff, #ffff00, #ff00ff);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+            margin-bottom: 20px;
+            letter-spacing: 5px;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ccc;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .team-info {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .team-info[data-team="blue"] {
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+        }
+
+        .team-info[data-team="red"] {
+            color: #ff4444;
+            text-shadow: 0 0 20px #ff4444;
+        }
+
+        .members {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(20, 20, 20, 0.9));
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .members h3 {
+            font-size: 1.2rem;
+            color: #fff;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .member-list {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .member-list li {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s;
+        }
+
+        .member-list li:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .classes-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .classe-card {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(20, 20, 20, 0.9));
+            border: 3px solid transparent;
+            border-radius: 15px;
+            padding: 25px 20px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .classe-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: transform 0.6s;
+            transform: rotate(0deg);
+        }
+
+        .classe-card:hover::before {
+            transform: rotate(360deg);
+        }
+
+        .classe-card:hover {
+            transform: scale(1.05) translateY(-5px);
+            box-shadow: 0 15px 50px rgba(255, 255, 255, 0.2);
+        }
+
+        .classe-card.selected {
+            border-color: #ffff00;
+            box-shadow: 0 0 50px rgba(255, 255, 0, 0.6);
+        }
+
+        .classe-card .icone {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+            transition: transform 0.3s;
+        }
+
+        .classe-card:hover .icone {
+            transform: scale(1.2);
+        }
+
+        .classe-card .nom {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .classe-card .stats {
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+
+        label {
+            display: block;
+            font-size: 1rem;
+            color: #ccc;
+            margin-bottom: 10px;
+            margin-top: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            color: #fff;
+            font-size: 1rem;
+            font-family: 'Orbitron', monospace;
+            outline: none;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        input[type="text"]:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .btn {
+            margin-top: 40px;
+            padding: 20px 40px;
+            background: linear-gradient(45deg, #ff0000, #ff4444);
+            border: none;
+            border-radius: 50px;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(255, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(255, 0, 0, 0.5);
+        }
+
+        .btn:active {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-back {
+            background: linear-gradient(45deg, #666, #999);
+            margin-top: 20px;
+            font-size: 1rem;
+            padding: 15px 30px;
+        }
+
+        .erreur {
+            margin-top: 20px;
+            color: #ff4444;
+            font-size: 1rem;
+            text-shadow: 0 0 10px #ff4444;
+            display: none;
+        }
+
+        /* Particules animées */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #fff;
+            border-radius: 50%;
+            animation: float 6s linear infinite;
+        }
+
+        .particle:nth-child(odd) {
+            background: #00ffff;
+            animation-duration: 8s;
+        }
+
+        .particle:nth-child(3n) {
+            background: #ff4444;
+            animation-duration: 10s;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Particules de fond -->
+    <div class="particle" style="left: 5%; animation-delay: 0s;"></div>
+    <div class="particle" style="left: 15%; animation-delay: 1s;"></div>
+    <div class="particle" style="left: 25%; animation-delay: 2s;"></div>
+    <div class="particle" style="left: 35%; animation-delay: 3s;"></div>
+    <div class="particle" style="left: 45%; animation-delay: 4s;"></div>
+    <div class="particle" style="left: 55%; animation-delay: 5s;"></div>
+    <div class="particle" style="left: 65%; animation-delay: 6s;"></div>
+    <div class="particle" style="left: 75%; animation-delay: 7s;"></div>
+    <div class="particle" style="left: 85%; animation-delay: 8s;"></div>
+    <div class="particle" style="left: 95%; animation-delay: 9s;"></div>
+
+    <div class="container">
+        <h1>⚔️ ARÈNE</h1>
+        <div class="team-info" id="team-info" data-team="">Équipe : Chargement...</div>
+        <div class="members">
+            <h3>Membres de votre équipe</h3>
+            <ul class="member-list" id="member-list">
+                <li>Chargement...</li>
+            </ul>
+        </div>
+        <p class="subtitle">Choisissez votre classe</p>
+        <div class="classes-grid">
+            <div class="classe-card selected" data-classe="hero">
+                <div class="icone">🗡️</div>
+                <div class="nom">Héros</div>
+                <div class="stats">PV: 300 | ATQ: 40 | RES: 20</div>
+            </div>
+            <div class="classe-card" data-classe="mage">
+                <div class="icone">🔮</div>
+                <div class="nom">Mage</div>
+                <div class="stats">PV: 200 | ATQ: 40 | RES: 10</div>
+            </div>
+            <div class="classe-card" data-classe="archer">
+                <div class="icone">🏹</div>
+                <div class="nom">Archer</div>
+                <div class="stats">PV: 220 | ATQ: 35 | RES: 12</div>
+            </div>
+            <div class="classe-card" data-classe="guerrier">
+                <div class="icone">🛡️</div>
+                <div class="nom">Guerrier</div>
+                <div class="stats">PV: 350 | ATQ: 50 | RES: 30</div>
+            </div>
+        </div>
+        <label for="nom">Ton nom de joueur</label>
+        <input type="text" id="nom" placeholder="Ex : ShadowBlade99" maxlength="20" />
+        <p class="erreur" id="erreur">Merci d'entrer un nom de joueur.</p>
+        <button class="btn" id="btn-connexion">ENTRER DANS L'ARÈNE</button>
+        <button class="btn btn-back" id="btn-back">Retour</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let classeSelectionnee = "hero";
+        const equipeChoisie = localStorage.getItem("equipeChoisie");
+
+        if (!equipeChoisie) {
+            window.location.href = "index.html";
+        }
+
+        // Afficher l'équipe
+        const teamInfo = document.getElementById("team-info");
+        teamInfo.textContent = `Équipe : ${equipeChoisie === "blue" ? "BLEUE" : "ROUGE"}`;
+        teamInfo.setAttribute("data-team", equipeChoisie);
+
+        // Rejoindre l'équipe
+        socket.emit("rejoindre_equipe", { equipe: equipeChoisie });
+
+        // Recevoir la liste des membres
+        socket.on("membres_equipe", (membres) => {
+            const list = document.getElementById("member-list");
+            list.innerHTML = "";
+            if (membres.length === 0) {
+                list.innerHTML = "<li>Aucun membre pour le moment</li>";
+            } else {
+                membres.forEach(membre => {
+                    const li = document.createElement("li");
+                    li.textContent = membre.nom || "Joueur anonyme";
+                    list.appendChild(li);
+                });
+            }
+        });
+
+        // Sélection de classe
+        document.querySelectorAll(".classe-card").forEach((card) => {
+            card.addEventListener("click", () => {
+                document.querySelectorAll(".classe-card").forEach((c) => c.classList.remove("selected"));
+                card.classList.add("selected");
+                classeSelectionnee = card.dataset.classe;
+            });
+        });
+
+        // Connexion
+        document.getElementById("btn-connexion").addEventListener("click", () => {
+            const nom = document.getElementById("nom").value.trim();
+            const erreur = document.getElementById("erreur");
+
+            if (!nom) {
+                erreur.style.display = "block";
+                return;
+            }
+
+            erreur.style.display = "none";
+            document.getElementById("btn-connexion").disabled = true;
+            document.getElementById("btn-connexion").textContent = "Connexion...";
+
+            // Sauvegarde
+            localStorage.setItem("nomJoueur", nom);
+            localStorage.setItem("classeChoisie", classeSelectionnee);
+
+            // Rejoindre le jeu
+            socket.emit("rejoindre", { nomJoueur: nom, classe: classeSelectionnee, equipe: equipeChoisie });
+
+            // Redirection après confirmation
+            socket.on("rejoindre_ok", () => {
+                window.location.href = "jeu.html";
+            });
+        });
+
+        // Bouton retour
+        document.getElementById("btn-back").addEventListener("click", () => {
+            socket.disconnect();
+            window.location.href = "index.html";
+        });
+
+        // Valider avec Entrée
+        document.getElementById("nom").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") document.getElementById("btn-connexion").click();
+        });
+    </script>
+</body>
+</html>
