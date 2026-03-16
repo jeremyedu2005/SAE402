@@ -3,203 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion — Arène Multijoueur</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+    <title>Connexion — Arena Clash</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"> 
+    <link rel="stylesheet" href="css/index.css"> 
 
-        body {
-            background: #1a1a2e;
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
 
-        .login-container {
-            background: #16213e;
-            border: 1px solid #0f3460;
-            border-radius: 16px;
-            padding: 40px;
-            width: 420px;
-            text-align: center;
-            box-shadow: 0 0 40px rgba(0, 255, 255, 0.1);
-        }
-
-        h1 {
-            font-size: 28px;
-            margin-bottom: 8px;
-            color: #00ffff;
-            letter-spacing: 2px;
-        }
-
-        .subtitle {
-            color: #888;
-            font-size: 14px;
-            margin-bottom: 30px;
-        }
-
-        label {
-            display: block;
-            text-align: left;
-            font-size: 13px;
-            color: #aaa;
-            margin-bottom: 6px;
-            margin-top: 20px;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 12px 16px;
-            background: #0f3460;
-            border: 1px solid #1a4a7a;
-            border-radius: 8px;
-            color: white;
-            font-size: 15px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        input[type="text"]:focus {
-            border-color: #00ffff;
-        }
-
-        .classes-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 8px;
-        }
-
-        .classe-card {
-            background: #0f3460;
-            border: 2px solid #1a4a7a;
-            border-radius: 10px;
-            padding: 14px 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-        }
-
-        .classe-card:hover {
-            border-color: #00ffff;
-            background: #1a4a7a;
-        }
-
-        .classe-card.selected {
-            border-color: #00ffff;
-            background: #0d4060;
-            box-shadow: 0 0 12px rgba(0,255,255,0.3);
-        }
-
-        .classe-card .icone { font-size: 28px; margin-bottom: 4px; }
-        .classe-card .nom { font-size: 14px; font-weight: bold; }
-        .classe-card .stats { font-size: 11px; color: #aaa; margin-top: 4px; }
-
-        .btn-connexion {
-            margin-top: 28px;
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #00ffff, #0080ff);
-            border: none;
-            border-radius: 10px;
-            color: #0a0a0a;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            letter-spacing: 1px;
-            transition: opacity 0.2s, transform 0.1s;
-        }
-
-        .btn-connexion:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-connexion:active { transform: translateY(0); }
-        .btn-connexion:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        .erreur {
-            margin-top: 12px;
-            color: #e74c3c;
-            font-size: 13px;
-            display: none;
-        }
-    </style>
 </head>
 <body>
-    <div class="login-container">
-        <h1>⚔️ ARÈNE</h1>
-        <p class="subtitle">Entrez dans la bataille multijoueur</p>
+    <!-- Particules de fond -->
+    <div class="particle" style="left: 10%; animation-delay: 0s;"></div>
+    <div class="particle" style="left: 20%; animation-delay: 1s;"></div>
+    <div class="particle" style="left: 30%; animation-delay: 2s;"></div>
+    <div class="particle" style="left: 40%; animation-delay: 3s;"></div>
+    <div class="particle" style="left: 50%; animation-delay: 4s;"></div>
+    <div class="particle" style="left: 60%; animation-delay: 5s;"></div>
+    <div class="particle" style="left: 70%; animation-delay: 6s;"></div>
+    <div class="particle" style="left: 80%; animation-delay: 7s;"></div>
+    <div class="particle" style="left: 90%; animation-delay: 8s;"></div>
 
-        <label for="nom">Ton nom de joueur</label>
-        <input type="text" id="nom" placeholder="Ex : ShadowBlade99" maxlength="20" />
-
-        <label>Choisis ta classe</label>
-        <div class="classes-grid">
-            <div class="classe-card selected" data-classe="hero">
-                <div class="icone">🗡️</div>
-                <div class="nom">Héros</div>
-                <div class="stats">PV: 300 | ATQ: 40 | RES: 20</div>
+    <div class="container">
+        <h1> Arena Clash</h1>
+        <p class="subtitle">Choisissez votre équipe</p>
+        <div class="teams-grid">
+            <div class="team-card blue" data-team="blue">
+                <div class="team-icon">🔵</div>
+                <div class="team-name">ÉQUIPE BLEUE</div>
             </div>
-            <div class="classe-card" data-classe="mage">
-                <div class="icone">🔮</div>
-                <div class="nom">Mage</div>
-                <div class="stats">PV: 200 | ATQ: 40 | RES: 10</div>
-            </div>
-            <div class="classe-card" data-classe="archer">
-                <div class="icone">🏹</div>
-                <div class="nom">Archer</div>
-                <div class="stats">PV: 220 | ATQ: 35 | RES: 12</div>
-            </div>
-            <div class="classe-card" data-classe="guerrier">
-                <div class="icone">🛡️</div>
-                <div class="nom">Guerrier</div>
-                <div class="stats">PV: 350 | ATQ: 50 | RES: 30</div>
+            <div class="team-card red" data-team="red">
+                <div class="team-icon">🔴</div>
+                <div class="team-name">ÉQUIPE ROUGE</div>
             </div>
         </div>
-
-        <p class="erreur" id="erreur">Merci d'entrer un nom et de choisir une classe.</p>
-
-        <button class="btn-connexion" id="btn-connexion">SE CONNECTER</button>
+        <p class="erreur" id="erreur">Veuillez choisir une équipe.</p>
+        <button class="btn" id="btn-suivant">SUIVANT</button>
     </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        let classeSelectionnee = "hero";
-
-        // Sélection de classe
-        document.querySelectorAll(".classe-card").forEach((card) => {
-            card.addEventListener("click", () => {
-                document.querySelectorAll(".classe-card").forEach((c) => c.classList.remove("selected"));
-                card.classList.add("selected");
-                classeSelectionnee = card.dataset.classe;
-            });
-        });
-
-        // Connexion
-        document.getElementById("btn-connexion").addEventListener("click", () => {
-            const nom = document.getElementById("nom").value.trim();
-            const erreur = document.getElementById("erreur");
-
-            if (!nom) {
-                erreur.textContent = "Merci d'entrer un nom de joueur.";
-                erreur.style.display = "block";
-                return;
-            }
-
-            erreur.style.display = "none";
-            document.getElementById("btn-connexion").disabled = true;
-            document.getElementById("btn-connexion").textContent = "Connexion...";
-
-            // Sauvegarde dans localStorage pour que jeu.html puisse les lire
-            localStorage.setItem("nomJoueur", nom);
-            localStorage.setItem("classeChoisie", classeSelectionnee);
-
-            window.location.href = "jeu.html";
-        });
-
-        // Valider avec Entrée
-        document.getElementById("nom").addEventListener("keydown", (e) => {
-            if (e.key === "Enter") document.getElementById("btn-connexion").click();
-        });
-    </script>
+<script src="js/index.js"></script>
 </body>
 </html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choix de Classe — Arena Clash</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/class.css"> <!--mettre../css/class.css en local-->
+</head>
+<body>
+    <!-- Particules de fond -->
+    <div class="particle" style="left: 5%; animation-delay: 0s;"></div>
+    <div class="particle" style="left: 15%; animation-delay: 1s;"></div>
+    <div class="particle" style="left: 25%; animation-delay: 2s;"></div>
+    <div class="particle" style="left: 35%; animation-delay: 3s;"></div>
+    <div class="particle" style="left: 45%; animation-delay: 4s;"></div>
+    <div class="particle" style="left: 55%; animation-delay: 5s;"></div>
+    <div class="particle" style="left: 65%; animation-delay: 6s;"></div>
+    <div class="particle" style="left: 75%; animation-delay: 7s;"></div>
+    <div class="particle" style="left: 85%; animation-delay: 8s;"></div>
+    <div class="particle" style="left: 95%; animation-delay: 9s;"></div>
+
+    <div class="container">
+        <h1>⚔️ ARÈNE</h1>
+        <div class="team-info" id="team-info" data-team="">Équipe : Chargement...</div>
+        <div class="members">
+            <h3>Membres de votre équipe</h3>
+            <ul class="member-list" id="member-list">
+                <li>Chargement...</li>
+            </ul>
+        </div>
+        <p class="subtitle">Choisissez votre classe</p>
+        <div class="classes-grid">
+            <div class="classe-card selected" data-classe="hero">
+                <div class="icone">🗡️</div>
+                <div class="nom">Héros</div>
+                <div class="stats">PV: 300 | ATQ: 40 | RES: 20</div>
+            </div>
+            <div class="classe-card" data-classe="mage">
+                <div class="icone">🔮</div>
+                <div class="nom">Mage</div>
+                <div class="stats">PV: 200 | ATQ: 40 | RES: 10</div>
+            </div>
+            <div class="classe-card" data-classe="archer">
+                <div class="icone">🏹</div>
+                <div class="nom">Archer</div>
+                <div class="stats">PV: 220 | ATQ: 35 | RES: 12</div>
+            </div>
+            <div class="classe-card" data-classe="guerrier">
+                <div class="icone">🛡️</div>
+                <div class="nom">Guerrier</div>
+                <div class="stats">PV: 350 | ATQ: 50 | RES: 30</div>
+            </div>
+        </div>
+        <label for="nom">Ton nom de joueur</label>
+        <input type="text" id="nom" placeholder="Ex : ShadowBlade99" maxlength="20" />
+        <p class="erreur" id="erreur">Merci d'entrer un nom de joueur.</p>
+        <button class="btn" id="btn-connexion">ENTRER DANS L'ARÈNE</button>
+        <button class="btn btn-back" id="btn-back">Retour</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let classeSelectionnee = "hero";
+        const equipeChoisie = localStorage.getItem("equipeChoisie");
+
+        if (!equipeChoisie) {
+            window.location.href = "../index.html";
+        }
+
+        // Afficher l'équipe
+        const teamInfo = document.querySelector("#team-info");
+        teamInfo.textContent = `Équipe : ${equipeChoisie === "blue" ? "BLEUE" : "ROUGE"}`;
+        teamInfo.setAttribute("data-team", equipeChoisie);
+
+        // Rejoindre l'équipe
+        socket.emit("rejoindre_equipe", { equipe: equipeChoisie });
+
+        // Recevoir la liste des membres
+        socket.on("membres_equipe", (membres) => {
+            const list = document.querySelector("#member-list");
+            list.innerHTML = "";
+            if (membres.length === 0) {
+                list.innerHTML = "<li>Aucun membre pour le moment</li>";
+            } else {
+                membres.forEach(membre => {
+                    const li = document.createElement("li");
+                    li.textContent = membre.nom || "Joueur anonyme";
+                    list.appendChild(li);
+                });
+            }
+        });
+
+        // Sélection de classe
+        document.querySelectorAll(".classe-card").forEach((card) => {
+            card.addEventListener("click", () => {
+                document.querySelectorAll(".classe-card").forEach((c) => c.classList.remove("selected"));
+                card.classList.add("selected");
+                classeSelectionnee = card.dataset.classe;
+            });
+        });
+
+        // Connexion
+        document.querySelector("#btn-connexion").addEventListener("click", () => {
+            const nom = document.querySelector("#nom").value.trim();
+            const erreur = document.querySelector("#erreur");
+
+            if (!nom) {
+                erreur.style.display = "block";
+                return;
+            }
+
+            erreur.style.display = "none";
+            document.querySelector("#btn-connexion").disabled = true;
+            document.querySelector("#btn-connexion").textContent = "Connexion...";
+
+            // Sauvegarde
+            localStorage.setItem("nomJoueur", nom);
+            localStorage.setItem("classeChoisie", classeSelectionnee);
+
+            // Rejoindre le jeu
+            socket.emit("rejoindre", { nomJoueur: nom, classe: classeSelectionnee, equipe: equipeChoisie });
+
+            // Redirection après confirmation
+            socket.on("rejoindre_ok", () => {
+                window.location.href = "jeu.html";
+            });
+        });
+
+        // Bouton retour
+        document.querySelector("#btn-back").addEventListener("click", () => {
+            socket.disconnect();
+            window.location.href = "../index.html";
+        });
+
+        // Valider avec Entrée
+        document.querySelector("#nom").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") document.querySelector("#btn-connexion").click();
+        });
+    </script>
+</body>
+</html>
