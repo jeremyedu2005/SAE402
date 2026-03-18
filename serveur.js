@@ -10,15 +10,16 @@ const io = new Server(server);
 // CONSTANTES
 //==============================================
 const SPEED_BASE  = 5;
-const ARENA_WIDTH  = 6900;
-const ARENA_HEIGHT = 4000;
+const ARENA_WIDTH  = 2500;
+const ARENA_HEIGHT = 2500;
 const CHAR_SIZE    = 50;
 
 const CLASSES = {
-    hero:     { pv: 300, resistance: 20, couleur: "#e74c3c" },
-    mage:     { pv: 200, resistance: 10, couleur: "#9b59b6" },
-    archer:   { pv: 220, resistance: 12, couleur: "#27ae60" },
-    guerrier: { pv: 350, resistance: 30, couleur: "#e67e22" },
+    hero:       { pv: 300, resistance: 20, couleur: "#e74c3c" },
+    mage_feu:   { pv: 200, resistance: 10, couleur: "#ff6600" },
+    mage_glace: { pv: 200, resistance: 10, couleur: "#88ddff" },
+    archer:     { pv: 220, resistance: 12, couleur: "#27ae60" },
+    guerrier:   { pv: 350, resistance: 30, couleur: "#e67e22" },
 };
 
 //==============================================
@@ -46,57 +47,119 @@ const ATTAQUES = {
         },
         attaque2: {
             type: "bouclier",
-            dureeMax: 3000,      // durée max du bouclier en ms
-            cooldown: 5000,      // cooldown après la fin du bouclier
-            speedMult: 0.3,      // vitesse réduite à 30% pendant le bouclier
+            dureeMax: 3000, cooldown: 5000, speedMult: 0.3,
             couleur: "#00aaff", label: "Bouclier",
         },
         attaque3: {
             type: "dash",
             distance: 300, cooldown: 2000,
+            vitesseDash: 30, dureeDash: 160,
             couleur: "#ffffff", label: "Dash",
         },
     },
-    mage: {
+
+    // --------------------------------------------------
+    // MAGE DE FEU (ancien "mage", renommé)
+    // --------------------------------------------------
+    mage_feu: {
         attaque1: {
             type: "projectile",
             degats: 55, vitesse: 8, taille: 18,
             dureeMax: 3000, disparitAuContact: true,
-            cooldown: 500, couleur: "#c39bd3", label: "Boule de feu",
-            sprite: "bouledefeu.png"
+            cooldown: 500, couleur: "#ff6600", label: "Boule de feu",
+            sprite: "bouledefeu.png",
+        },
+        attaque2: {
+            // Météore : zone météorite + laisse une zone de brûlure persistante
+            type: "zone_combo",
+            // Phase 1 : impact de météorite
+            impact: {
+                forme: "meteorite", degats: 70, resistance_mult: 1,
+                rayon: 130, dureeAffichage: 500, couleur: "#ff4400",
+            },
+            // Phase 2 : brûlure persistante centrée sur le même point
+            persistant: {
+                forme: "cercle_persistant",
+                degats: 8,          // dégâts par tick
+                resistance_mult: 0.5,
+                rayon: 110,
+                duree: 4000,        // durée totale en ms
+                tickRate: 500,      // dégâts toutes les 500ms
+                couleur: "#ff7700",
+                dureeAffichage: 4000,
+            },
+            cooldown: 4000, couleur: "#ff4400", label: "Météore",
+            telegraphe: { delai: 500, couleur: "#ff4400" },
+        },
+        attaque3: {
+            type: "dash",
+            distance: 500, cooldown: 6000,
+            estTeleportation: true,
+            couleur: "#ff8844", label: "Téléportation",
+        },
+    },
+
+    // --------------------------------------------------
+    // MAGE DE GLACE
+    // --------------------------------------------------
+    mage_glace: {
+        attaque1: {
+            // Projectile qui explose en éventail après une courte distance
+            type: "projectile_explosif",
+            // Le projectile principal
+            degats: 15, vitesse: 10, taille: 14,
+            dureeMax: 1000,            // courte durée → explose rapidement
+            disparitAuContact: true,
+            couleur: "#aaeeff",
+            // Config de l'explosion : projette N éclats en éventail
+            explosion: {
+                nbEclats:   12,        // nombre de projectiles secondaires
+                angleTotal: 360,      // dégré total de l'éventail
+                degats:     20,
+                vitesse:    14,
+                taille:     8,
+                dureeMax:   800,
+                couleur:    "#ccffff",
+                disparitAuContact: true,
+            },
+            cooldown: 700, couleur: "#aaeeff", label: "Éclats de glace",
         },
         attaque2: {
             type: "zone", forme: "laser",
             degats: 80, resistance_mult: 0.5,
             longueur: 1500, largeur: 50,
             dureeAffichage: 400, cooldown: 2000,
-            couleur: "#00eeff", label: "Laser magique",
+            couleur: "#88ddff", label: "Rayon de glace",
+            telegraphe: { delai: 300, couleur: "#88ddff" },
         },
         attaque3: {
             type: "dash",
             distance: 500, cooldown: 6000,
-            estTeleportation: true,   // pas d'animation intermédiaire
-            couleur: "#cc88ff", label: "Téléportation",
+            estTeleportation: true,
+            couleur: "#88ddff", label: "Téléportation",
         },
     },
+
     archer: {
         attaque1: {
             type: "projectile",
             degats: 40, vitesse: 18, taille: 12,
             dureeMax: 1500, disparitAuContact: true,
             cooldown: 400, couleur: "#2ecc71", label: "Flèche",
-            sprite: "fleche.png"
+            sprite: "fleche.png",
         },
         attaque2: {
             type: "zone", forme: "meteorite",
             degats: 50, resistance_mult: 1,
-            rayon: 120,
-            dureeAffichage: 600, cooldown: 3000,
+            rayon: 120, dureeAffichage: 600, cooldown: 3000,
             couleur: "#f1c40f", label: "Pluie de flèches",
+            sprite: "pluiedefleches.png",
+            telegraphe: { delai: 500, couleur: "#f1c40f" },
         },
         attaque3: {
             type: "dash",
             distance: 350, cooldown: 3500,
+            vitesseDash: 30, dureeDash: 190,
             couleur: "#aaffaa", label: "Dash",
         },
     },
@@ -116,9 +179,7 @@ const ATTAQUES = {
         },
         attaque3: {
             type: "boost",
-            duree: 2000,         // durée du boost en ms
-            speedMult: 2.5,      // multiplicateur de vitesse
-            cooldown: 5000,
+            duree: 2000, speedMult: 2.5, cooldown: 5000,
             couleur: "#ff8800", label: "Sprint",
         },
     },
@@ -234,18 +295,127 @@ class AttaqueZone {
 }
 
 //==============================================
+// CLASSE TELEGRAPHE
+// Zone visuelle temporaire (0 dégâts) qui précède un sort.
+// À son expiration, le serveur déclenche l'attaque réelle.
+//==============================================
+let telegrapheIdCounter = 0;
+
+class Telegraphe {
+    constructor({ id, lanceurId, socketId, equipe, classe, delai, forme, couleur,
+                  tireurX, tireurY, dirX, dirY, cibleX, cibleY,
+                  rayon, angleOuverture, longueur, largeur,
+                  nomAttaque, statsAttaque }) {
+        this.id         = ++telegrapheIdCounter;
+        this.socketId   = socketId;
+        this.lanceurId  = lanceurId;
+        this.equipe     = equipe;
+        this.classe     = classe;
+        this.delai      = delai;
+        this.forme      = forme;
+        this.couleur    = couleur;
+        this.tireurX    = tireurX; this.tireurY = tireurY;
+        this.dirX       = dirX;   this.dirY    = dirY;
+        this.cibleX     = cibleX; this.cibleY  = cibleY;
+        this.rayon           = rayon          ?? 0;
+        this.angleOuverture  = angleOuverture ?? 90;
+        this.longueur        = longueur       ?? 300;
+        this.largeur         = largeur        ?? 20;
+        this.nomAttaque      = nomAttaque;
+        this.statsAttaque    = statsAttaque;   // stats complètes pour déclencher l'attaque
+        this.createdAt  = Date.now();
+    }
+
+    estExpire() { return Date.now() - this.createdAt >= this.delai; }
+
+    // Ratio [0..1] de progression du délai (pour animation côté client)
+    ratioProgression() { return Math.min((Date.now() - this.createdAt) / this.delai, 1); }
+
+    toJSON() {
+        return {
+            id: this.id, forme: this.forme, couleur: this.couleur,
+            tireurX: this.tireurX, tireurY: this.tireurY,
+            dirX: this.dirX, dirY: this.dirY,
+            cibleX: this.cibleX, cibleY: this.cibleY,
+            rayon: this.rayon, angleOuverture: this.angleOuverture,
+            longueur: this.longueur, largeur: this.largeur,
+            ratio: this.ratioProgression(),
+        };
+    }
+}
+
+//==============================================
+// CLASSE ZONE PERSISTANTE (brûlure, poison, etc.)
+// Fait des dégâts répétés à intervalles réguliers pendant sa durée de vie.
+//==============================================
+let zonePersistanteIdCounter = 0;
+
+class ZonePersistante {
+    constructor({ lanceurId, equipe, x, y, stats }) {
+        this.id         = ++zonePersistanteIdCounter;
+        this.lanceurId  = lanceurId;
+        this.equipe     = equipe;
+        this.x = x; this.y = y;          // centre de la zone
+        this.forme      = stats.forme;    // "cercle_persistant"
+        this.rayon      = stats.rayon;
+        this.degats     = stats.degats;
+        this.resistance_mult = stats.resistance_mult ?? 1;
+        this.couleur    = stats.couleur;
+        this.duree      = stats.duree;
+        this.tickRate   = stats.tickRate; // ms entre deux ticks de dégâts
+        this.dureeAffichage = stats.dureeAffichage ?? stats.duree;
+        this.createdAt  = Date.now();
+        this.dernierTick = Date.now();
+    }
+
+    estExpire() { return Date.now() - this.createdAt > this.duree; }
+
+    // Retourne true si un tick de dégâts doit être appliqué maintenant
+    doitFaireDegats() {
+        const now = Date.now();
+        if (now - this.dernierTick >= this.tickRate) {
+            this.dernierTick = now;
+            return true;
+        }
+        return false;
+    }
+
+    toucheJoueur(joueur) {
+        const cx = joueur.x + CHAR_SIZE / 2;
+        const cy = joueur.y + CHAR_SIZE / 2;
+        return Math.sqrt((cx - this.x) ** 2 + (cy - this.y) ** 2) < this.rayon + CHAR_SIZE / 2;
+    }
+
+    toJSON() {
+        const elapsed = Date.now() - this.createdAt;
+        const ratioRestant = Math.max(0, 1 - elapsed / this.duree);
+        return {
+            id: this.id, x: this.x, y: this.y,
+            rayon: this.rayon, couleur: this.couleur,
+            ratioRestant, // pour le client : opacité qui diminue
+        };
+    }
+}
+
+//==============================================
 // ÉTAT DU JEU
 //==============================================
 const joueurs          = {};
 const keysPressed      = {};
 const projectiles      = {};
 const zonesActives     = {};
+const zonesPersistantes  = {};  // id -> ZonePersistante
+const telegraphesActifs  = {};  // id -> Telegraphe
 const equipesEnAttente = { blue: [], red: [] };
 const cooldowns        = {};
 
 // États spéciaux actifs : bouclier, boost
 // effets[socketId] = { bouclier: { actif, finAt }, boost: { actif, finAt, speedMult } }
 const effets = {};
+
+// Historique du chat — en mémoire pour toute la durée de vie du serveur
+const historicChat      = [];
+const CHAT_HISTORIQUE_MAX = 200;
 
 function creerPersonnage(socketId, nomJoueur, classe, equipe) {
     const stats = CLASSES[classe] || CLASSES.hero;
@@ -271,8 +441,9 @@ function appliquerDegatsZone(zone) {
         if (joueur.id === zone.lanceurId) continue;
         if (joueur.equipe === zone.equipe) continue;
         if (joueur.pv <= 0) continue;
-        // Ignore les joueurs avec bouclier actif
+        // Ignore les joueurs avec bouclier ou dash actif
         if (effets[joueur.id]?.bouclier?.actif) continue;
+        if (effets[joueur.id]?.dash?.actif)     continue;
         if (zone.toucheJoueur(joueur)) {
             zone.victimesImpactees.add(joueur.id);
             const degats = Math.max(zone.degats - joueur.resistance * zone.resistance_mult, 0);
@@ -295,10 +466,47 @@ function broadcastGameState() {
             // Envoie les états spéciaux pour le rendu client
             bouclierActif: effets[j.id]?.bouclier?.actif ?? false,
             boostActif:    effets[j.id]?.boost?.actif    ?? false,
+            dashActif:     effets[j.id]?.dash?.actif     ?? false,
+            dashCouleur:   effets[j.id]?.dash?.actif ? (ATTAQUES[j.classe]?.attaque3?.couleur ?? "#fff") : null,
         })),
-        projectiles: Object.values(projectiles).map(p => p.toJSON()),
-        zones:       Object.values(zonesActives).map(z => z.toJSON()),
+        projectiles:       Object.values(projectiles).map(p => p.toJSON()),
+        zones:             Object.values(zonesActives).map(z => z.toJSON()),
+        zonesPersistantes: Object.values(zonesPersistantes).map(z => z.toJSON()),
+        telegraphes:       Object.values(telegraphesActifs).map(t => t.toJSON()),
     });
+}
+
+//==============================================
+// UTILITAIRE : explosion d'un projectile en éclats
+//==============================================
+function creerEclats(proj) {
+    if (!proj.explosion) return;
+    const cfg      = proj.explosion;
+    const nbEclats = cfg.nbEclats ?? 6;
+    const demiAngle = (cfg.angleTotal ?? 120) / 2 * Math.PI / 180;
+    const angleBase = Math.atan2(proj.dirY, proj.dirX);
+
+    for (let i = 0; i < nbEclats; i++) {
+        const t   = nbEclats === 1 ? 0 : (i / (nbEclats - 1)) - 0.5; // [-0.5 .. 0.5]
+        const ang = angleBase + t * demiAngle * 2;
+        const eclat = new Projectile({
+            lanceurId: proj.lanceurId,
+            equipe:    proj.equipe,
+            classe:    proj.classe,
+            x: proj.x, y: proj.y,
+            dirX: Math.cos(ang), dirY: Math.sin(ang),
+            stats: {
+                degats:            cfg.degats,
+                vitesse:           cfg.vitesse,
+                taille:            cfg.taille,
+                dureeMax:          cfg.dureeMax,
+                disparitAuContact: cfg.disparitAuContact,
+                couleur:           cfg.couleur,
+                sprite:            cfg.sprite || null,
+            },
+        });
+        projectiles[eclat.id] = eclat;
+    }
 }
 
 //==============================================
@@ -327,12 +535,34 @@ function serverGameLoop() {
             effet.boost.actif = false;
             dirty = true;
         }
+        // Dash animé : expire → pose le cooldown et informe le client
+        if (effet.dash?.actif && now >= effet.dash.finAt) {
+            effet.dash.actif = false;
+            const joueur = joueurs[sid];
+            if (joueur) {
+                cooldowns[sid] = cooldowns[sid] || {};
+                cooldowns[sid]["attaque3"] = now;
+                console.log(`[Dash] ${joueur.nomJoueur} — fin du dash, cooldown lancé`);
+                io.to(sid).emit("attaque_ok", { attaque: "attaque3", cooldown: effet.dash.cooldown });
+                io.to(sid).emit("dash_fin");
+            }
+            dirty = true;
+        }
     }
 
     // --- Déplacement joueurs ---
     for (const [socketId, keys] of Object.entries(keysPressed)) {
         const perso = joueurs[socketId];
         if (!perso || perso.pv <= 0) continue;
+
+        // Dash animé en cours : déplacement forcé, inputs ignorés
+        if (effets[socketId]?.dash?.actif) {
+            const dash = effets[socketId].dash;
+            perso.x = Math.max(0, Math.min(ARENA_WIDTH  - CHAR_SIZE, perso.x + dash.dirX * dash.vitesse));
+            perso.y = Math.max(0, Math.min(ARENA_HEIGHT - CHAR_SIZE, perso.y + dash.dirY * dash.vitesse));
+            dirty = true;
+            continue;
+        }
 
         let moveX = 0, moveY = 0;
         if (keys["z"]) moveY -= 1;
@@ -357,21 +587,29 @@ function serverGameLoop() {
     for (const [pid, proj] of Object.entries(projectiles)) {
         if (!proj.actif) { delete projectiles[pid]; dirty = true; continue; }
         proj.avancer();
-        if (proj.estExpire()) { delete projectiles[pid]; dirty = true; continue; }
+        if (proj.estExpire()) {
+            // Explosion à l'expiration (fin de portée)
+            if (proj.explosion) creerEclats(proj);
+            delete projectiles[pid]; dirty = true; continue;
+        }
         for (const joueur of Object.values(joueurs)) {
             if (joueur.id === proj.lanceurId) continue;
             if (joueur.equipe === proj.equipe) continue;
             if (joueur.pv <= 0) continue;
+
+            // Invincible pendant le dash
+            if (effets[joueur.id]?.dash?.actif) continue;
 
             // Bouclier actif : détruit les projectiles destructibles qui touchent le joueur
             if (effets[joueur.id]?.bouclier?.actif) {
                 if (proj.disparitAuContact && proj.toucheJoueur(joueur)) {
                     const lanceur = joueurs[proj.lanceurId];
                     console.log(`[Bouclier] ${joueur.nomJoueur} détruit le projectile de ${lanceur?.nomJoueur ?? "Inconnu"}`);
+                    if (proj.explosion) creerEclats(proj); // explose même sur bouclier
                     delete projectiles[pid];
                     dirty = true;
                 }
-                continue; // dans tous les cas, le bouclier bloque les dégâts
+                continue;
             }
 
             if (proj.toucheJoueur(joueur)) {
@@ -384,7 +622,10 @@ function serverGameLoop() {
                     console.log(`[Mort] ${joueur.nomJoueur} éliminé par ${lanceurNom} !`);
                     io.emit("joueur_elimine", { victimeId: joueur.id, tueurNom: lanceurNom, victimeNom: joueur.nomJoueur });
                 }
-                if (proj.disparitAuContact) { delete projectiles[pid]; }
+                if (proj.disparitAuContact) {
+                    if (proj.explosion) creerEclats(proj); // explose à l'impact
+                    delete projectiles[pid];
+                }
                 dirty = true;
                 break;
             }
@@ -392,10 +633,82 @@ function serverGameLoop() {
         dirty = true;
     }
 
-    // --- Zones : expiration ---
+    // --- Zones instantanées : expiration ---
     for (const [zid, zone] of Object.entries(zonesActives)) {
         if (zone.estExpire()) { delete zonesActives[zid]; }
         dirty = true;
+    }
+
+    // --- Zones persistantes : dégâts par tick + expiration ---
+    for (const [zid, zone] of Object.entries(zonesPersistantes)) {
+        if (zone.estExpire()) {
+            delete zonesPersistantes[zid];
+            dirty = true;
+            continue;
+        }
+        if (zone.doitFaireDegats()) {
+            for (const joueur of Object.values(joueurs)) {
+                if (joueur.id === zone.lanceurId) continue;
+                if (joueur.equipe === zone.equipe) continue;
+                if (joueur.pv <= 0) continue;
+                if (effets[joueur.id]?.bouclier?.actif) continue;
+                if (effets[joueur.id]?.dash?.actif)     continue;
+                if (zone.toucheJoueur(joueur)) {
+                    const degats = Math.max(zone.degats - joueur.resistance * zone.resistance_mult, 0);
+                    joueur.pv = Math.max(0, joueur.pv - degats);
+                    const lanceur = joueurs[zone.lanceurId];
+                    const lanceurNom = lanceur ? lanceur.nomJoueur : "Inconnu";
+                    console.log(`[Brûlure] ${lanceurNom} → ${joueur.nomJoueur} : ${degats} dégâts (PV: ${joueur.pv}/${joueur.pvMax})`);
+                    if (joueur.pv <= 0) {
+                        console.log(`[Mort] ${joueur.nomJoueur} éliminé par ${lanceurNom} !`);
+                        io.emit("joueur_elimine", { victimeId: joueur.id, tueurNom: lanceurNom, victimeNom: joueur.nomJoueur });
+                    }
+                }
+            }
+            dirty = true;
+        }
+        dirty = true; // pour que la progression d'opacité soit envoyée au client
+    }
+
+    // --- Télégraphes : expiration → déclenche l'attaque réelle ---
+    for (const [tid, tg] of Object.entries(telegraphesActifs)) {
+        dirty = true; // le ratio change à chaque tick
+        if (!tg.estExpire()) continue;
+
+        delete telegraphesActifs[tid];
+        const tireur = joueurs[tg.socketId];
+        if (!tireur || tireur.pv <= 0) continue; // annulé si le lanceur est mort
+
+        const stats = tg.statsAttaque;
+        console.log(`[Télégraphe expiré] ${tireur.nomJoueur} — déclenchement "${stats.label}"`);
+
+        if (stats.type === "zone") {
+            const zone = new AttaqueZone({
+                lanceurId: tg.socketId, equipe: tg.equipe, classe: tg.classe,
+                stats, tireurX: tg.tireurX, tireurY: tg.tireurY,
+                dirX: tg.dirX, dirY: tg.dirY, cibleX: tg.cibleX, cibleY: tg.cibleY,
+            });
+            appliquerDegatsZone(zone);
+            zonesActives[zone.id] = zone;
+
+        } else if (stats.type === "zone_combo") {
+            const impactStats = { ...stats.impact };
+            const zone = new AttaqueZone({
+                lanceurId: tg.socketId, equipe: tg.equipe, classe: tg.classe,
+                stats: impactStats,
+                tireurX: tg.tireurX, tireurY: tg.tireurY,
+                dirX: tg.dirX, dirY: tg.dirY, cibleX: tg.cibleX, cibleY: tg.cibleY,
+            });
+            appliquerDegatsZone(zone);
+            zonesActives[zone.id] = zone;
+
+            const zp = new ZonePersistante({
+                lanceurId: tg.socketId, equipe: tg.equipe,
+                x: tg.cibleX, y: tg.cibleY,
+                stats: stats.persistant,
+            });
+            zonesPersistantes[zp.id] = zp;
+        }
     }
 
     if (dirty) broadcastGameState();
@@ -410,8 +723,12 @@ function lancerAttaque(socket, nomAttaque, dirX, dirY, cibleX, cibleY) {
     const tireur = joueurs[socket.id];
     if (!tireur || tireur.pv <= 0) return;
 
-    // Pendant le bouclier, aucune autre attaque ne peut être lancée
+    // Pendant le bouclier ou le dash, aucune autre attaque ne peut être lancée
     if (effets[socket.id]?.bouclier?.actif && nomAttaque !== "attaque2") {
+        socket.emit("cooldown_actif", { attaque: nomAttaque, restantMs: 0 });
+        return;
+    }
+    if (effets[socket.id]?.dash?.actif) {
         socket.emit("cooldown_actif", { attaque: nomAttaque, restantMs: 0 });
         return;
     }
@@ -431,10 +748,72 @@ function lancerAttaque(socket, nomAttaque, dirX, dirY, cibleX, cibleY) {
     const cx = tireur.x + CHAR_SIZE / 2;
     const cy = tireur.y + CHAR_SIZE / 2;
 
+    // --- Télégraphe : si le sort a un délai d'avertissement, on crée d'abord
+    //     un télégraphe visuel puis on sort. L'attaque réelle sera déclenchée
+    //     automatiquement par la boucle à l'expiration du télégraphe.
+    if (stats.telegraphe) {
+        const tg = new Telegraphe({
+            socketId:   socket.id,
+            lanceurId:  socket.id,
+            equipe:     tireur.equipe,
+            classe:     tireur.classe,
+            delai:      stats.telegraphe.delai,
+            couleur:    stats.telegraphe.couleur,
+            forme:      stats.forme ?? stats.impact?.forme ?? "cercle",
+            tireurX: cx, tireurY: cy,
+            dirX: ndx,   dirY: ndy,
+            cibleX, cibleY,
+            // Dimensions selon la forme du sort
+            rayon:          stats.rayon          ?? stats.impact?.rayon          ?? 0,
+            angleOuverture: stats.angleOuverture ?? stats.impact?.angleOuverture ?? 90,
+            longueur:       stats.longueur       ?? 0,
+            largeur:        stats.largeur        ?? 0,
+            nomAttaque,
+            statsAttaque: stats,   // stats complètes pour déclencher l'attaque à l'expiration
+        });
+        telegraphesActifs[tg.id] = tg;
+        console.log(`[Télégraphe] ${tireur.nomJoueur} (${tireur.classe}) — "${stats.label}" (délai: ${stats.telegraphe.delai}ms)`);
+        socket.emit("attaque_ok", { attaque: nomAttaque, cooldown: stats.cooldown });
+        return;
+    }
+
     if (stats.type === "projectile") {
         const proj = new Projectile({ lanceurId: socket.id, equipe: tireur.equipe, classe: tireur.classe, x: cx, y: cy, dirX: ndx, dirY: ndy, stats });
         projectiles[proj.id] = proj;
         console.log(`[${nomAttaque}] ${tireur.nomJoueur} (${tireur.classe}) — "${stats.label}"`);
+
+    } else if (stats.type === "projectile_explosif") {
+        // Crée le projectile principal — il sera surveille dans la boucle
+        // pour exploser quand dureeMax expire ou à l'impact
+        const proj = new Projectile({
+            lanceurId: socket.id, equipe: tireur.equipe, classe: tireur.classe,
+            x: cx, y: cy, dirX: ndx, dirY: ndy, stats,
+        });
+        proj.explosion = stats.explosion; // stocke la config d'explosion
+        projectiles[proj.id] = proj;
+        console.log(`[${nomAttaque}] ${tireur.nomJoueur} (${tireur.classe}) — "${stats.label}"`);
+
+    } else if (stats.type === "zone_combo") {
+        // Phase 1 : impact instantané (meteorite)
+        const impactStats = { ...stats.impact, forme: stats.impact.forme };
+        const zone = new AttaqueZone({
+            lanceurId: socket.id, equipe: tireur.equipe, classe: tireur.classe,
+            stats: impactStats,
+            tireurX: cx, tireurY: cy,
+            dirX: ndx, dirY: ndy,
+            cibleX, cibleY,
+        });
+        appliquerDegatsZone(zone);
+        zonesActives[zone.id] = zone;
+
+        // Phase 2 : zone persistante centrée sur le point cliqué
+        const zp = new ZonePersistante({
+            lanceurId: socket.id, equipe: tireur.equipe,
+            x: cibleX, y: cibleY,
+            stats: stats.persistant,
+        });
+        zonesPersistantes[zp.id] = zp;
+        console.log(`[${nomAttaque}] ${tireur.nomJoueur} (${tireur.classe}) — "${stats.label}" (impact + brûlure)`);
 
     } else if (stats.type === "zone") {
         const zone = new AttaqueZone({ lanceurId: socket.id, equipe: tireur.equipe, classe: tireur.classe, stats, tireurX: cx, tireurY: cy, dirX: ndx, dirY: ndy, cibleX, cibleY });
@@ -447,16 +826,34 @@ function lancerAttaque(socket, nomAttaque, dirX, dirY, cibleX, cibleY) {
         let dx = 0, dy = 0;
         if (keys["z"]) dy -= 1; if (keys["s"]) dy += 1;
         if (keys["q"]) dx -= 1; if (keys["d"]) dx += 1;
-        // Si aucune touche ZQSD : dash dans la direction du curseur (envoyée par le client)
         if (dx === 0 && dy === 0) { dx = ndx; dy = ndy; }
         const dLen = Math.sqrt(dx * dx + dy * dy);
-        if (dLen === 0) return; // sécurité : aucune direction déterminable
-        tireur.x = Math.max(0, Math.min(ARENA_WIDTH  - CHAR_SIZE, tireur.x + (dx / dLen) * stats.distance));
-        tireur.y = Math.max(0, Math.min(ARENA_HEIGHT - CHAR_SIZE, tireur.y + (dy / dLen) * stats.distance));
-        console.log(`[${nomAttaque}] ${tireur.nomJoueur} (${tireur.classe}) — "${stats.label}" vers (${Math.round(tireur.x)}, ${Math.round(tireur.y)})`);
-        // Broadcast immédiat : la boucle ne pose dirty que si des touches sont enfoncées,
-        // donc sans broadcast ici la nouvelle position n'arriverait pas au client.
-        broadcastGameState();
+        if (dLen === 0) return;
+
+        if (stats.estTeleportation) {
+            // Téléportation instantanée (mage uniquement)
+            tireur.x = Math.max(0, Math.min(ARENA_WIDTH  - CHAR_SIZE, tireur.x + (dx / dLen) * stats.distance));
+            tireur.y = Math.max(0, Math.min(ARENA_HEIGHT - CHAR_SIZE, tireur.y + (dy / dLen) * stats.distance));
+            console.log(`[${nomAttaque}] ${tireur.nomJoueur} — "${stats.label}" (téléportation)`);
+            broadcastGameState();
+        } else {
+            // Dash animé : stocke l'état, la boucle gère le déplacement frame par frame
+            if (!effets[socket.id]) effets[socket.id] = {};
+            effets[socket.id].dash = {
+                actif:    true,
+                dirX:     dx / dLen,
+                dirY:     dy / dLen,
+                vitesse:  stats.vitesseDash,
+                finAt:    Date.now() + stats.dureeDash,
+                cooldown: stats.cooldown,
+            };
+            // Le cooldown sera posé à la FIN du dash — on annule celui posé par verifierCooldown
+            cooldowns[socket.id][nomAttaque] = 0;
+            console.log(`[${nomAttaque}] ${tireur.nomJoueur} — "${stats.label}" (dash animé)`);
+            socket.emit("dash_debut", { couleur: stats.couleur });
+            // attaque_ok sera émis à la fin du dash par la boucle d'expiration
+            return; // on sort avant l'emit attaque_ok ci-dessous
+        }
 
     } else if (stats.type === "boost") {
         if (!effets[socket.id]) effets[socket.id] = {};
@@ -487,7 +884,7 @@ io.on("connection", (socket) => {
         joueurs[socket.id]     = perso;
         keysPressed[socket.id] = {};
         cooldowns[socket.id]   = {};
-        effets[socket.id]      = { bouclier: { actif: false }, boost: { actif: false } };
+        effets[socket.id]      = { bouclier: { actif: false }, boost: { actif: false }, dash: { actif: false } };
 
         equipesEnAttente[equipe] = equipesEnAttente[equipe].filter(m => m.id !== socket.id);
         const membres = equipesEnAttente[equipe].map(m => ({ nom: m.nom || "Anonyme" }));
@@ -495,7 +892,33 @@ io.on("connection", (socket) => {
 
         console.log(`[Joueur connecté] ${nomJoueur} (${classe}, ${equipe}) — ID: ${socket.id}`);
         socket.emit("rejoindre_ok", { monId: socket.id, perso, attaques: ATTAQUES[classe] });
+        // Envoie l'historique du chat au joueur qui rejoint
+        if (historicChat.length > 0) {
+            socket.emit("chat_historique", historicChat);
+        }
         broadcastGameState();
+    });
+
+    // Chat : stocke et diffuse à tous
+    socket.on("chat_message", ({ texte }) => {
+        const joueur = joueurs[socket.id];
+        if (!joueur) return;
+        if (typeof texte !== "string") return;
+        const textePropre = texte.trim().slice(0, 200);
+        if (!textePropre) return;
+
+        const couleur = joueur.equipe === "blue" ? "#4fc3f7" : "#ef5350";
+        const msg = {
+            nomJoueur: joueur.nomJoueur,
+            equipe:    joueur.equipe,
+            couleur,
+            texte:     textePropre,
+            timestamp: Date.now(),
+        };
+        historicChat.push(msg);
+        if (historicChat.length > CHAT_HISTORIQUE_MAX) historicChat.shift();
+        console.log(`[Chat] ${joueur.nomJoueur} (${joueur.equipe}) : ${textePropre}`);
+        io.emit("chat_message", msg);
     });
 
     socket.on("keys_update", ({ keys }) => {
@@ -561,6 +984,8 @@ io.on("connection", (socket) => {
         delete cooldowns[socket.id]; delete effets[socket.id];
         for (const [pid, proj] of Object.entries(projectiles)) { if (proj.lanceurId === socket.id) delete projectiles[pid]; }
         for (const [zid, zone] of Object.entries(zonesActives)) { if (zone.lanceurId === socket.id) delete zonesActives[zid]; }
+        for (const [zid, zone] of Object.entries(zonesPersistantes)) { if (zone.lanceurId === socket.id) delete zonesPersistantes[zid]; }
+        for (const [tid, tg] of Object.entries(telegraphesActifs)) { if (tg.socketId === socket.id) delete telegraphesActifs[tid]; }
         for (const equipe in equipesEnAttente) {
             equipesEnAttente[equipe] = equipesEnAttente[equipe].filter(m => m.id !== socket.id);
             const membres = equipesEnAttente[equipe].map(m => ({ nom: m.nom || "Anonyme" }));

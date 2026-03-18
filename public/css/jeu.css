@@ -7,11 +7,11 @@ body {
 }
 
 .arena {
-    background-image: url('../img/battle_map.png');
+    background-image: url('../img/test_map_battle_new.png');
     background-size: cover;
     background-position: center;
-    width:6900px;  
-    height:4000px;
+    width:2500px;  
+    height:2500px;
     position: relative;
 }
 
@@ -28,11 +28,7 @@ body {
 }
 
 
-.pv {
-    position: absolute;
-    top: -25px;
-    font-size: 12px;
-}
+
 
 button {
     position: fixed;
@@ -58,3 +54,4 @@ button {
     /* On force l'affichage pixelisé pour le style rétro */
     image-rendering: pixelated; 
 }
+

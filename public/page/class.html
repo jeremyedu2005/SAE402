@@ -31,22 +31,27 @@
                 <div class="classe-card selected" data-classe="hero">
                     <div class="icone">🗡️</div>
                     <div class="nom">Héros</div>
-                    <div class="stats">PV: 300 | ATQ: 40 | RES: 20</div>
+                    <div class="stats">PV: 300 | RES: 20</div>
                 </div>
-                <div class="classe-card" data-classe="mage">
-                    <div class="icone">🔮</div>
-                    <div class="nom">Mage</div>
-                    <div class="stats">PV: 200 | ATQ: 40 | RES: 10</div>
+                <div class="classe-card" data-classe="mage_feu">
+                    <div class="icone">🔥</div>
+                    <div class="nom">Mage de Feu</div>
+                    <div class="stats">PV: 200 | RES: 10</div>
+                </div>
+                <div class="classe-card" data-classe="mage_glace">
+                    <div class="icone">❄️</div>
+                    <div class="nom">Mage de Glace</div>
+                    <div class="stats">PV: 200 | RES: 10</div>
                 </div>
                 <div class="classe-card" data-classe="archer">
                     <div class="icone">🏹</div>
                     <div class="nom">Archer</div>
-                    <div class="stats">PV: 220 | ATQ: 35 | RES: 12</div>
+                    <div class="stats">PV: 220 | RES: 12</div>
                 </div>
                 <div class="classe-card" data-classe="guerrier">
                     <div class="icone">🛡️</div>
                     <div class="nom">Guerrier</div>
-                    <div class="stats">PV: 350 | ATQ: 50 | RES: 30</div>
+                    <div class="stats">PV: 350 | RES: 30</div>
                 </div>
             </div>
 
@@ -73,8 +78,7 @@
 
                 <hr class="panel-hr">
                 <h2 id="info-classe-nom" class="panel-class-title">CLASSE : HÉROS</h2>
-                <div id="info-classe-details">
-                    </div>
+                <div id="info-classe-details"></div>
             </div>
         </div>
     </div>
@@ -86,27 +90,51 @@
         const equipeChoisie = localStorage.getItem("equipeChoisie");
 
         const descriptions = {
-            hero: 
-            { 
-                nom: "HÉROS", 
-                details: `<div class="ability"><strong>Clic G :</strong> Coup d'épée</div><div class="ability"><strong>Clic D :</strong> Bouclier (Ralentit)</div><div class="ability"><strong>Espace :</strong> Dash / Esquive</div>` 
+            hero: {
+                nom: "HÉROS",
+                details: `
+                    <div class="ability"><strong>Clic G :</strong> Coup d'épée — Arc de cercle devant soi</div>
+                    <div class="ability"><strong>Clic D :</strong> Bouclier — Immunité aux dégâts (ralentit, maintenir)</div>
+                    <div class="ability"><strong>Espace :</strong> Dash — Esquive rapide avec invincibilité</div>
+                `
             },
-            mage: { 
-                nom: "MAGE", 
-                details: `<div class="ability"><strong>Clic G :</strong> Boule de feu</div><div class="ability"><strong>Clic D :</strong> Laser instantané</div><div class="ability"><strong>Espace :</strong> Téléportation</div>` 
+            mage_feu: {
+                nom: "MAGE DE FEU",
+                details: `
+                    <div class="ability"><strong>Clic G :</strong> Boule de feu — Projectile enflammé</div>
+                    <div class="ability"><strong>Clic D :</strong> Météore — Impact + zone de brûlure persistante</div>
+                    <div class="ability"><strong>Espace :</strong> Téléportation — Déplacement instantané</div>
+                `
             },
-            archer: { 
-                nom: "ARCHER", 
-                details: `<div class="ability"><strong>Clic G :</strong> Tir de flèches</div><div class="ability"><strong>Clic D :</strong> Pluie de flèches</div><div class="ability"><strong>Espace :</strong> Dash / Esquive</div>` 
+            mage_glace: {
+                nom: "MAGE DE GLACE",
+                details: `
+                    <div class="ability"><strong>Clic G :</strong> Éclats de glace — Projectile qui explose en éventail</div>
+                    <div class="ability"><strong>Clic D :</strong> Rayon de glace — Laser instantané</div>
+                    <div class="ability"><strong>Espace :</strong> Téléportation — Déplacement instantané</div>
+                `
             },
-            guerrier: { 
-                nom: "GUERRIER", 
-                details: `<div class="ability"><strong>Clic G :</strong> Coup de poing</div><div class="ability"><strong>Clic D :</strong> Frappe au sol (Cratère)</div><div class="ability"><strong>Espace :</strong> Sprint</div>` 
+            archer: {
+                nom: "ARCHER",
+                details: `
+                    <div class="ability"><strong>Clic G :</strong> Flèche — Tir rapide et précis</div>
+                    <div class="ability"><strong>Clic D :</strong> Pluie de flèches — Zone de dégâts ciblée</div>
+                    <div class="ability"><strong>Espace :</strong> Dash — Esquive avec invincibilité</div>
+                `
+            },
+            guerrier: {
+                nom: "GUERRIER",
+                details: `
+                    <div class="ability"><strong>Clic G :</strong> Coup d'épée — Large arc de cercle</div>
+                    <div class="ability"><strong>Clic D :</strong> Frappe au sol — Explosion centrée sur soi</div>
+                    <div class="ability"><strong>Espace :</strong> Sprint — Boost de vitesse temporaire</div>
+                `
             }
         };
 
         function updateInfoPanel(classe) {
             const info = descriptions[classe];
+            if (!info) return;
             document.querySelector("#info-classe-nom").textContent = `CLASSE : ${info.nom}`;
             document.querySelector("#info-classe-details").innerHTML = info.details;
         }
@@ -120,16 +148,20 @@
         socket.on("membres_equipe", (membres) => {
             const list = document.querySelector("#member-list");
             list.innerHTML = "";
-            membres.forEach(m => {
-                const li = document.createElement("li");
-                li.textContent = m.nom || "Joueur anonyme";
-                list.appendChild(li);
-            });
+            if (membres.length === 0) {
+                list.innerHTML = "<li>Aucun membre pour le moment</li>";
+            } else {
+                membres.forEach(m => {
+                    const li = document.createElement("li");
+                    li.textContent = m.nom || "Joueur anonyme";
+                    list.appendChild(li);
+                });
+            }
         });
 
         document.querySelectorAll(".classe-card").forEach((card) => {
             card.addEventListener("click", () => {
-                document.querySelectorAll(".classe-card").forEach((c) => c.classList.remove("selected"));
+                document.querySelectorAll(".classe-card").forEach(c => c.classList.remove("selected"));
                 card.classList.add("selected");
                 classeSelectionnee = card.dataset.classe;
                 updateInfoPanel(classeSelectionnee);
@@ -141,15 +173,25 @@
         document.querySelector("#btn-connexion").addEventListener("click", () => {
             const nom = document.querySelector("#nom").value.trim();
             if (!nom) { document.querySelector("#erreur").style.display = "block"; return; }
+            document.querySelector("#erreur").style.display = "none";
             localStorage.setItem("nomJoueur", nom);
             localStorage.setItem("classeChoisie", classeSelectionnee);
             socket.emit("rejoindre", { nomJoueur: nom, classe: classeSelectionnee, equipe: equipeChoisie });
         });
 
+        document.querySelector("#nom").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") document.querySelector("#btn-connexion").click();
+        });
+
         socket.on("rejoindre_ok", () => { window.location.href = "jeu.html"; });
-        document.querySelector("#btn-back").addEventListener("click", () => { socket.disconnect(); window.location.href = "../index.html"; });
-        
-        // Initialisation
+        socket.on("erreur", ({ message }) => alert("Erreur : " + message));
+
+        document.querySelector("#btn-back").addEventListener("click", () => {
+            socket.disconnect();
+            window.location.href = "../index.html";
+        });
+
+        // Initialisation du panneau
         updateInfoPanel(classeSelectionnee);
     </script>
 </body>
