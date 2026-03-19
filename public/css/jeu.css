@@ -1,0 +1,57 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #222;
+    color: white;
+    font-family: Arial;
+}
+
+.arena {
+    background-image: url('../img/test_map_battle_new_1.png');
+    background-size: cover;
+    background-position: center;
+    width:6900px;  
+    height:4000px;
+    position: relative;
+}
+
+.character {
+    width: 50px;
+    height: 50px;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+
+
+
+button {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    padding: 10px;
+    cursor: pointer;
+    background-color: red;
+    color:white;
+    border-radius: 10px;
+    border:2px red solid;
+}
+
+@keyframes fireBallAnim {
+    from { background-position: 0% 0%; }
+    to { background-position: 150% 0%; } 
+}
+
+.sprite-animation {
+    /* Très important : l'image doit faire 300% de la largeur de la DIV */
+    background-size: 300% 100% !important; 
+    animation: fireBallAnim 0.4s steps(3) infinite;
+    /* On force l'affichage pixelisé pour le style rétro */
+    image-rendering: pixelated; 
+}
+
