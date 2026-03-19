@@ -7,11 +7,11 @@ body {
 }
 
 .arena {
-    background-image: url('../img/test_map_battle_new.png');
+    background-image: url('../img/battle_map.png');
     background-size: cover;
     background-position: center;
-    width:2500px;  
-    height:2500px;
+    width:6900px;  
+    height:4000px;
     position: relative;
 }
 

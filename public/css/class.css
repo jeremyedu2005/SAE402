@@ -8,9 +8,10 @@ body {
     background: radial-gradient(circle at center, #000 0%, #111 50%, #000 100%);
     color: #fff;
     font-family: 'Orbitron', monospace;
-    overflow: hidden;
+    overflow-x: hidden;       /* était overflow:hidden — on garde juste X */
+    overflow-y: auto;         /* scroll vertical autorisé */
     position: relative;
-    height: 100vh;
+    min-height: 100vh;        /* était height:100vh fixe */
 }
 
 body::before {
@@ -27,24 +28,27 @@ body::before {
 
 @keyframes pulse { 0% { opacity: 0.3; } 100% { opacity: 0.7; } }
 
+/* ── Layout principal ── */
 .main-layout {
     display: flex;
     justify-content: center;
-    align-items: center;
-    height: 100vh;
+    align-items: flex-start;  /* était center — évite l'étirement vertical */
+    min-height: 100vh;        /* était height:100vh fixe */
     gap: 40px;
-    padding: 0 40px;
+    padding: 40px;
 }
 
 .container { 
     position: relative; 
+    width: 100%;
     max-width: 750px; 
     text-align: center; 
     z-index: 1;
 }
 
+/* ── Titre ── */
 h1 {
-    font-size: 3rem;
+    font-size: clamp(1.5rem, 5vw, 3rem);
     font-weight: 900;
     background: linear-gradient(45deg, #ff0000, #00ffff, #ffff00, #ff00ff);
     background-size: 400% 400%;
@@ -59,8 +63,9 @@ h1 {
 
 @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
+/* ── Équipe ── */
 .team-info { 
-    font-size: 1.5rem; 
+    font-size: clamp(0.9rem, 2.5vw, 1.5rem);
     font-weight: 700; 
     margin-bottom: 20px; 
     text-transform: uppercase; 
@@ -75,6 +80,7 @@ h1 {
     text-shadow: 0 0 20px #ff4444; 
 }
 
+/* ── Membres ── */
 .members {
     background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(20, 20, 20, 0.9));
     border: 2px solid rgba(255, 255, 255, 0.2);
@@ -90,18 +96,22 @@ h1 {
     flex-wrap: wrap;
     gap: 10px; 
 }
-.member-list li { background: rgba(255, 255, 255, 0.1); 
+.member-list li {
+    background: rgba(255, 255, 255, 0.1); 
     padding: 8px 15px; 
     border-radius: 20px; 
-    font-size: 0.9rem; 
+    font-size: clamp(0.7rem, 1.5vw, 0.9rem);
     border: 1px solid rgba(255, 255, 255, 0.2); 
 }
 
-.classes-grid { display: grid; 
-    grid-template-columns: repeat(2, 1fr); 
+/* ── Grille de classes ── */
+.classes-grid {
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 20px; 
     margin: 20px 0; 
 }
+
 .classe-card {
     background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(20, 20, 20, 0.9));
     border: 3px solid transparent; 
@@ -122,9 +132,11 @@ h1 {
     border-color: #00ffff; 
 }
 
-/* --- PANNEAU DE DROITE (T INVERSÉ) --- */
+/* ── Panneau de droite ── */
 .info-panel {
     width: 380px;
+    min-width: 280px;
+    flex-shrink: 0;
     background: rgba(10, 10, 10, 0.9);
     border: 2px solid #00ffff;
     border-radius: 20px;
@@ -134,16 +146,17 @@ h1 {
 
 .panel-title { 
     color: #00ffff; 
-    font-size: 1.2rem;
+    font-size: clamp(0.85rem, 2vw, 1.2rem);
     margin-bottom: 20px; 
     text-shadow: 0 0 10px #00ffff; 
     text-align: center;
 }
 
+/* ── Clavier ZQSD ── */
 .controls-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 colonnes obligatoires */
-    grid-template-rows: auto auto;         /* 2 lignes */
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto auto;
     gap: 15px;
     justify-items: center;
     margin-bottom: 25px;
@@ -177,29 +190,35 @@ h1 {
     text-transform: uppercase; 
 }
 
-/* PLACEMENT PRÉCIS WASD / ZQSD */
-.key-z { grid-column: 2; grid-row: 1; } /* Z en haut au milieu */
-.key-q { grid-column: 1; grid-row: 2; } /* Q en bas à gauche */
-.key-s { grid-column: 2; grid-row: 2; } /* S en bas au milieu */
-.key-d { grid-column: 3; grid-row: 2; } /* D en bas à droite */
+/* Placement ZQSD */
+.key-z { grid-column: 2; grid-row: 1; }
+.key-q { grid-column: 1; grid-row: 2; }
+.key-s { grid-column: 2; grid-row: 2; }
+.key-d { grid-column: 3; grid-row: 2; }
 
-.panel-hr { border: 0; 
+.panel-hr {
+    border: 0; 
     border-top: 1px solid rgba(0, 255, 255, 0.2); 
     margin: 20px 0; 
 }
-.panel-class-title { color: #00ffff; 
-    font-size: 1.1rem; 
+
+.panel-class-title {
+    color: #00ffff; 
+    font-size: clamp(0.8rem, 1.8vw, 1.1rem);
     margin-bottom: 15px;
- }
+}
+
 .ability { 
     margin-bottom: 12px; 
-    font-size: 0.95rem; 
+    font-size: clamp(0.75rem, 1.5vw, 0.95rem);
+    text-align: left;
 }
 .ability strong { 
     color: #ff4444; 
     text-shadow: 0 0 5px rgba(255, 68, 68, 0.3); 
 }
 
+/* ── Input ── */
 input[type="text"] {
     width: 100%; 
     padding: 15px; 
@@ -208,32 +227,103 @@ input[type="text"] {
     border-radius: 25px; 
     color: #fff; 
     font-family: 'Orbitron'; 
+    font-size: clamp(0.7rem, 1.5vw, 1rem);
     text-align: center;
-     margin-bottom: 20px;
+    margin-bottom: 20px;
 }
+
+/* ── Boutons ── */
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
 .btn { 
     padding: 15px 40px; 
     background: linear-gradient(45deg, #ff0000, #ff4444); 
     border: none; 
     border-radius: 50px; 
     color: #fff; 
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(0.65rem, 1.5vw, 0.9rem);
     font-weight: 700; 
-    cursor: pointer; 
-
+    cursor: pointer;
+    white-space: nowrap;
 }
 .btn-back {
     background: linear-gradient(45deg, #444, #666); 
-    margin-left: 10px; 
+    margin-left: 0;
 }
 
+/* ── Particules ── */
 .particle { 
-    position: absolute; 
+    position: fixed;
     width: 4px; height: 4px; 
     background: #fff; 
     border-radius: 50%; 
-    animation: float 6s linear infinite; 
-
+    animation: float 6s linear infinite;
+    z-index: 0;
+    pointer-events: none;
 }
 
-
 @keyframes float { 0% { transform: translateY(100vh); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(-10vh); opacity: 0; } }
+
+
+/* ═══════════════════════════════════════════
+   MEDIA QUERIES
+   ═══════════════════════════════════════════ */
+
+/* ── Tablette (≤ 1024px) : layout en colonne ── */
+@media (max-width: 1024px) {
+    .main-layout {
+        flex-direction: column;
+        align-items: center;
+        padding: 30px 24px;
+        gap: 30px;
+    }
+
+    .info-panel {
+        width: 100%;
+        min-width: unset;
+        max-width: 750px;
+    }
+}
+
+/* ── Mobile (≤ 600px) ── */
+@media (max-width: 600px) {
+    .main-layout {
+        padding: 16px 12px;
+        gap: 20px;
+    }
+
+    .classes-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .classe-card {
+        padding: 14px 8px;
+    }
+
+    input[type="text"] {
+        padding: 12px;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 14px;
+    }
+
+    .info-panel {
+        padding: 20px 16px;
+    }
+}
+
+/* ── Très petits écrans (≤ 360px) ── */
+@media (max-width: 360px) {
+    .classes-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
