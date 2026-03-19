@@ -27,57 +27,6 @@ const MINIMAP_H    = Math.round(MINIMAP_W * ARENA_HEIGHT / ARENA_WIDTH);
 const MINIMAP_PAD  = 12;
 
 //==============================================
-// CONFIG SPRITESHEETS DE PERSONNAGES
-// frameW/H   : dimensions d'une frame dans le fichier source
-// frames     : nombre de frames d'animation (run)
-// fps        : vitesse d'animation pendant le déplacement
-// spriteSize : taille affichée à l'écran (carré)
-// fichier    : chemin sous sprites/
-// Toutes les spritesheets sont orientées vers la droite.
-// Le sprite est retourné horizontalement (scaleX(-1)) si facingX < 0.
-//==============================================
-const PERSONNAGE_SPRITES = {
-    archer: {
-        fichier:    "../sprites/Personnages/archer-run.png",
-        frameW:     170,   // largeur d'une frame source
-        frameH:     171,   // hauteur de la spritesheet source
-        frames:     6,
-        fps:        10,
-        spriteSize: 80,    // taille affichée (px) — peut différer de CHAR_SIZE
-    },
-    mage_feu: {
-        fichier:    "../sprites/Personnages/fireMage-run.png",
-        frameW:     170,   // largeur d'une frame source
-        frameH:     171,   // hauteur de la spritesheet source
-        frames:     6,
-        fps:        10,
-        spriteSize: 80,    // taille affichée (px) — peut différer de CHAR_SIZE
-    },
-    hero: {
-        fichier:    "../sprites/Personnages/knight-run.png",
-        frameW:     170,   // largeur d'une frame source
-        frameH:     171,   // hauteur de la spritesheet source
-        frames:     6,
-        fps:        10,
-        spriteSize: 80,    // taille affichée (px) — peut différer de CHAR_SIZE
-    },
-    goblin: {
-        fichier:    "../sprites/Personnages/gobelin-run.png",
-        frameW:     170,   // largeur d'une frame source
-        frameH:     171,   // hauteur de la spritesheet source
-        frames:     5,
-        fps:        10,
-        spriteSize: 80,    // taille affichée (px) — peut différer de CHAR_SIZE
-    },
-    // Autres classes à ajouter ici quand les sprites seront disponibles :
-    // hero:     { fichier: "sprites/Personnages/Hero/hero-run.png", ... },
-    // mage_feu: { ... },
-};
-
-// Stocke les intervalles d'animation par joueur id
-const animIntervals = {};
-
-//==============================================
 // CAMÉRA
 //==============================================
 const arena = document.querySelector(".arena");
@@ -284,48 +233,16 @@ socket.on("chat_historique", (messages) => {
 // PERSONNAGES
 //==============================================
 function creerElementPersonnage(joueur) {
-    const conf = PERSONNAGE_SPRITES[joueur.classe];
     const div = document.createElement("div");
     div.className      = `character ${joueur.classe}`;
     div.dataset.id     = joueur.id;
-    div.style.left     = joueur.x + "px";
-    div.style.top      = joueur.y + "px";
-    div.style.opacity  = joueur.pv <= 0 ? "0.3" : "1";
-    div.style.cursor   = "crosshair";
-    div.style.position = "absolute";
-
-    if (conf) {
-        // Sprite : cssText = complet pour écraser les styles de .character de jeu.css
-        const bgW = conf.frames * conf.spriteSize;
-        div.style.cssText = `
-            position: absolute;
-            left: ${joueur.x}px;
-            top:  ${joueur.y}px;
-            width:  ${conf.spriteSize}px;
-            height: ${conf.spriteSize}px;
-            background-image: url('../sprites/${conf.fichier}');
-            background-size: ${bgW}px ${conf.spriteSize}px;
-            background-repeat: no-repeat;
-            background-position: 0px 0px;
-            background-color: transparent;
-            border: none;
-            border-radius: 50%;
-            box-shadow: none;
-            image-rendering: pixelated;
-            cursor: crosshair;
-            opacity: ${joueur.pv <= 0 ? "0.3" : "1"};
-        `;
-        div.dataset.frame    = "0";
-        div.dataset.facingX  = "1";
-        div.dataset.isMoving = "0";
-    } else {
-        // Placeholder cercle coloré
-        div.style.border       = `3px solid ${joueur.couleur}`;
-        div.style.borderRadius = "50%";
-        div.style.boxSizing    = "border-box";
-        div.style.width        = CHAR_SIZE + "px";
-        div.style.height       = CHAR_SIZE + "px";
-    }
+    div.style.left         = joueur.x + "px";
+    div.style.top          = joueur.y + "px";
+    div.style.opacity      = joueur.pv <= 0 ? "0.3" : "1";
+    div.style.cursor       = "crosshair";
+    div.style.border       = `3px solid ${joueur.couleur}`;
+    div.style.borderRadius = "50%";
+    div.style.boxSizing    = "border-box";
 
     const label = document.createElement("div");
     label.style.cssText = `
@@ -334,7 +251,6 @@ function creerElementPersonnage(joueur) {
         white-space: nowrap; pointer-events: none;
         display: flex; flex-direction: column; align-items: center;
     `;
-    label.dataset.baseTransform = "translateX(-50%)";
     const nomDiv = document.createElement("div");
     nomDiv.textContent      = joueur.nomJoueur;
     nomDiv.style.fontWeight = "bold";
@@ -371,96 +287,29 @@ function creerElementPersonnage(joueur) {
     div.appendChild(label);
 
     if (joueur.id === monId) {
-        if (!conf) div.style.border = "3px solid #00ffff";
+        const moi = document.createElement("div");
+        moi.style.cssText = `
+            position:absolute; top:50%; left:50%;
+            transform:translate(-50%,-50%);
+            font-size:9px; color:#00ffff; font-weight:bold;
+            pointer-events:none; text-shadow:0 0 4px #00ffff;
+        `;
+        moi.textContent = "●";
+        div.appendChild(moi);
+        div.style.border = "3px solid #00ffff";
     }
 
     arena.appendChild(div);
-    elementsDuJeu[joueur.id] = { div, pvBar, pvText, conf, label };
-}
-
-function animerPersonnage(id, conf) {
-    // Lance ou arrête l'interval d'animation selon isMoving
-    const el = elementsDuJeu[id];
-    if (!el || !conf) return;
-    const { div } = el;
-
-    const wasMoving = div.dataset.isMoving === "1";
-    const isMoving  = joueur => joueur; // juste pour clarté, appelé plus bas
-
-    // Appelé depuis mettreAJourPersonnage avec les bonnes valeurs
-}
-
-function appliquerFrameSprite(div, conf, frame, facingX) {
-    const offsetX = frame * conf.spriteSize;
-    div.style.backgroundPosition = `-${offsetX}px 0px`;
-    // Retourne uniquement le background du div (le sprite)
-    // en utilisant scaleX sur le div, puis contre-inverser chaque enfant
-    // pour que nom, PV et "●" restent dans le bon sens.
-    div.style.transform = facingX < 0 ? "scaleX(-1)" : "scaleX(1)";
-    // Contre-inverser chaque enfant en préservant son transform original
-    for (const child of div.children) {
-        // Lire le transform de base stocké au moment de la création
-        const base = child.dataset.baseTransform ?? child.style.transform ?? "";
-        // Enlever tout scaleX précédent pour repartir proprement
-        const clean = base.replace(/\s*scaleX\([^)]*\)/g, "").trim();
-        child.style.transform = facingX < 0 ? (clean ? clean + " scaleX(-1)" : "scaleX(-1)") : clean;
-    }
+    elementsDuJeu[joueur.id] = { div, pvBar, pvText };
 }
 
 function mettreAJourPersonnage(joueur) {
     const el = elementsDuJeu[joueur.id];
     if (!el) return;
-    const { div, pvBar, pvText, conf } = el;
+    const { div, pvBar, pvText } = el;
 
     div.style.left = joueur.x + "px";
     div.style.top  = joueur.y + "px";
-
-    // --- Animation sprite ---
-    if (conf) {
-        const facingX  = joueur.facingX  ?? 1;
-        // Détection locale pour mon personnage : le serveur ne broadcast pas quand on s'arrête
-        const isMoving = joueur.id === monId
-            ? !!(keys["z"] || keys["s"] || keys["q"] || keys["d"])
-            : (joueur.isMoving ?? false);
-        const prevFacing = parseInt(div.dataset.facingX ?? "1");
-
-        // Toujours mettre à jour la direction (même à l'arrêt)
-        if (facingX !== prevFacing) {
-            div.dataset.facingX = String(facingX);
-            const frame = parseInt(div.dataset.frame ?? "0");
-            appliquerFrameSprite(div, conf, frame, facingX);
-        }
-
-        // Démarre la boucle d'animation si pas encore active.
-        // La boucle tourne en permanence et lit keys[] directement —
-        // elle est totalement indépendante du serveur.
-        if (!animIntervals[joueur.id]) {
-            let frame = 0;
-            animIntervals[joueur.id] = setInterval(() => {
-                if (!div.isConnected) {
-                    clearInterval(animIntervals[joueur.id]);
-                    delete animIntervals[joueur.id];
-                    return;
-                }
-                const fx = parseInt(div.dataset.facingX ?? "1");
-                const estMonPersonnage = div.dataset.id === monId;
-                const bouge = estMonPersonnage
-                    ? !!(keys["z"] || keys["s"] || keys["q"] || keys["d"])
-                    : div.dataset.isMoving === "1"; // autres joueurs : mis à jour par serveur
-                if (bouge) {
-                    frame = (frame + 1) % conf.frames;
-                } else {
-                    frame = 0; // idle : reste sur frame 0
-                }
-                div.dataset.frame = String(frame);
-                appliquerFrameSprite(div, conf, frame, fx);
-            }, 1000 / conf.fps);
-        }
-        // Mettre à jour isMoving pour les autres joueurs (depuis le serveur)
-        if (joueur.id !== monId) {
-            div.dataset.isMoving = joueur.isMoving ? "1" : "0";
-        }
-    }
 
     const pvRatio = Math.max(0, joueur.pv / joueur.pvMax);
     pvBar.style.width      = (pvRatio * 100) + "%";
@@ -469,44 +318,32 @@ function mettreAJourPersonnage(joueur) {
         : "linear-gradient(90deg,#e74c3c,#ff6b6b)";
     pvText.textContent = `${joueur.pv}/${joueur.pvMax}`;
 
-    // Effets visuels selon état — border uniquement pour les cercles (pas les sprites)
     if (joueur.dashActif) {
         div.style.opacity   = "0.55";
         div.style.filter    = "brightness(1.6)";
         div.style.boxShadow = `0 0 20px 6px ${joueur.dashCouleur||"#fff"}, 0 0 6px ${joueur.dashCouleur||"#fff"} inset`;
-        if (!conf) div.style.border = `3px solid ${joueur.dashCouleur||"#fff"}`;
+        div.style.border    = `3px solid ${joueur.dashCouleur||"#fff"}`;
     } else if (joueur.bouclierActif) {
         div.style.opacity   = "1";
         div.style.filter    = "";
         div.style.boxShadow = "0 0 16px 4px #00aaff, 0 0 4px #00aaff inset";
-        if (!conf) div.style.border = "3px solid #00aaff";
+        div.style.border    = "3px solid #00aaff";
     } else if (joueur.boostActif) {
         div.style.opacity   = "1";
         div.style.filter    = "";
         div.style.boxShadow = "0 0 12px 3px #ff8800";
-        if (!conf) div.style.border = `3px solid ${joueur.couleur}`;
+        div.style.border    = `3px solid ${joueur.couleur}`;
     } else {
         div.style.opacity   = joueur.pv <= 0 ? "0.3" : "1";
-        // Ralenti (goblin) : teinte violette
-        div.style.filter    = joueur.ralentiActif ? "hue-rotate(270deg) brightness(0.85)" : "";
-        div.style.boxShadow = joueur.ralentiActif ? "0 0 10px 3px #aa44ff" : "";
-        if (conf) {
-            div.style.border       = "none";
-            div.style.borderRadius = "50%";
-        } else {
-            div.style.border = joueur.id === monId ? "3px solid #00ffff" : `3px solid ${joueur.couleur}`;
-        }
+        div.style.filter    = "";
+        div.style.boxShadow = "";
+        div.style.border    = joueur.id === monId ? "3px solid #00ffff" : `3px solid ${joueur.couleur}`;
     }
 }
 
 function supprimerElementPersonnage(id) {
     const el = elementsDuJeu[id];
-    if (el) {
-        clearInterval(animIntervals[id]);
-        delete animIntervals[id];
-        el.div.remove();
-        delete elementsDuJeu[id];
-    }
+    if (el) { el.div.remove(); delete elementsDuJeu[id]; }
 }
 
 //==============================================
@@ -527,6 +364,11 @@ function creerElementProjectile(proj) {
         if (proj.sprite === "bouledefeu.png") {
             // Spritesheet animée 3 frames
             div.classList.add("sprite-animation");
+        } else if (proj.sprite === "pluiedefleches.png") {
+            // Sprite statique orienté selon la direction du tir
+            div.style.backgroundSize     = "contain";
+            div.style.backgroundPosition = "center";
+            div.style.backgroundRepeat   = "no-repeat";
         } else {
             div.style.backgroundSize     = "contain";
             div.style.backgroundPosition = "center";
@@ -557,65 +399,29 @@ function supprimerElementProjectile(id) {
 //==============================================
 // ZONES (SVG)
 //==============================================
-// Sprites à afficher pour certaines zones (centrés sur le point d'impact)
-const ZONE_SPRITES = {
-    meteorite: { fichier: "pluiedefleches.png", taille: 350 },
-};
-
 function creerElementZone(zone) {
-    const spriteConf = ZONE_SPRITES[zone.forme];
-    let svg = null;
-    let spriteDiv = null;
-
-    if (spriteConf) {
-        // Zones avec sprite : PNG uniquement, pas de SVG (le télégraphe a déjà montré la zone)
-        spriteDiv = document.createElement("div");
-        const cx = zone.forme === "meteorite" ? zone.cibleX : zone.tireurX;
-        const cy = zone.forme === "meteorite" ? zone.cibleY : zone.tireurY;
-        spriteDiv.style.cssText = `
-            position: absolute;
-            width: ${spriteConf.taille}px; height: ${spriteConf.taille}px;
-            background-image: url('../sprites/${spriteConf.fichier}');
-            background-size: contain; background-repeat: no-repeat;
-            background-position: center;
-            pointer-events: none; z-index: 5;
-            transform: translate(-50%, -50%);
-            image-rendering: pixelated;
-        `;
-        spriteDiv.style.left = cx + "px";
-        spriteDiv.style.top  = cy + "px";
-        arena.appendChild(spriteDiv);
-    } else {
-        // Zones sans sprite : SVG classique
-        svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.style.cssText = `
-            position:absolute; left:0; top:0; width:100%; height:100%;
-            pointer-events:none; z-index:4; overflow:visible;
-        `;
-        const tag = zone.forme === "laser" ? "polygon" : "path";
-        const el  = document.createElementNS("http://www.w3.org/2000/svg", tag);
-        el.setAttribute("fill",         hexToRgba(zone.couleur, 0.45));
-        el.setAttribute("stroke",       zone.couleur);
-        el.setAttribute("stroke-width", "2");
-        if      (zone.forme === "arc")       el.setAttribute("d",      tracerArc(zone));
-        else if (zone.forme === "laser")     el.setAttribute("points", tracerLaser(zone));
-        else if (zone.forme === "cercle")    el.setAttribute("d",      tracerCercle(zone));
-        else if (zone.forme === "meteorite") el.setAttribute("d",      tracerCerclePoint(zone));
-        svg.appendChild(el);
-        arena.appendChild(svg);
-    }
-
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.cssText = `
+        position:absolute; left:0; top:0; width:100%; height:100%;
+        pointer-events:none; z-index:4; overflow:visible;
+    `;
+    const tag = zone.forme === "laser" ? "polygon" : "path";
+    const el  = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    el.setAttribute("fill",         hexToRgba(zone.couleur, 0.45));
+    el.setAttribute("stroke",       zone.couleur);
+    el.setAttribute("stroke-width", "2");
+    if      (zone.forme === "arc")       el.setAttribute("d",      tracerArc(zone));
+    else if (zone.forme === "laser")     el.setAttribute("points", tracerLaser(zone));
+    else if (zone.forme === "cercle")    el.setAttribute("d",      tracerCercle(zone));
+    else if (zone.forme === "meteorite") el.setAttribute("d",      tracerCerclePoint(zone));
+    svg.appendChild(el);
+    arena.appendChild(svg);
     const timeout = setTimeout(() => supprimerElementZone(zone.id), zone.dureeAffichage ?? 500);
-    elementesZones[zone.id] = { svg, spriteDiv, timeout };
+    elementesZones[zone.id] = { svg, timeout };
 }
 function supprimerElementZone(id) {
     const el = elementesZones[id];
-    if (el) {
-        clearTimeout(el.timeout);
-        if (el.svg)       el.svg.remove();
-        if (el.spriteDiv) el.spriteDiv.remove();
-        delete elementesZones[id];
-    }
+    if (el) { clearTimeout(el.timeout); el.svg.remove(); delete elementesZones[id]; }
 }
 function tracerArc(z) {
     const b = Math.atan2(z.dirY, z.dirX), d = z.angleOuverture * Math.PI / 180;
@@ -693,7 +499,7 @@ function creerElementTelegraphe(tg) {
     contour.setAttribute("stroke-dasharray", "10 6");
     contour.style.animation = "telegraphe-cligno 0.35s linear infinite";
 
-    const pathData = calculerPathTelegraphe(tg);
+    const pathData   = calculerPathTelegraphe(tg);
     if (tg.forme === "laser") {
         fill.setAttribute("points",    pathData);
         contour.setAttribute("points", pathData);
@@ -705,7 +511,6 @@ function creerElementTelegraphe(tg) {
     svg.appendChild(fill);
     svg.appendChild(contour);
     arena.appendChild(svg);
-
     elementesTelegraphes[tg.id] = { svg, fill, contour };
 }
 
@@ -783,17 +588,8 @@ const hudAttaque3 = creerCaseHud("hud-atq3", "—", "Espace");
 
 const activeCooldowns = {};
 
-function arreterClignotementDoubleDash() {
-    if (activeCooldowns["double_dash_fenetre_iv"]) {
-        clearInterval(activeCooldowns["double_dash_fenetre_iv"]);
-        delete activeCooldowns["double_dash_fenetre_iv"];
-    }
-}
-
 function afficherCooldown(hudEl, nomAttaque, cooldownMs) {
     if (activeCooldowns[nomAttaque]) clearInterval(activeCooldowns[nomAttaque]);
-    // Si c'est l'attaque3, arrêter aussi le clignotement du double dash
-    if (nomAttaque === "attaque3") arreterClignotementDoubleDash();
     const overlay = hudEl.querySelector(".cd-overlay");
     const start   = Date.now();
     hudEl.style.borderColor = "#555";
@@ -927,31 +723,6 @@ socket.on("bouclier_etat", ({ actif, dureeMax, cooldown }) => {
     if (actif) afficherDureeBouclier(dureeMax);
     else       afficherCooldown(hudAttaque2, "attaque2", cooldown);
 });
-// Double dash : fenêtre ouverte → case HUD clignote pour indiquer qu'on peut relancer
-socket.on("double_dash_pret", () => {
-    // Le 1er dash vient de se terminer : la case est "prête" pour le 2e
-    // On annule tout cooldown en cours sur la case et on la fait clignoter
-    if (activeCooldowns["attaque3"]) {
-        clearInterval(activeCooldowns["attaque3"]);
-        delete activeCooldowns["attaque3"];
-    }
-    hudAttaque3.querySelector(".cd-overlay").style.height = "0%";
-    // Clignotement cyan rapide = fenêtre active
-    let count = 0;
-    const iv = setInterval(() => {
-        hudAttaque3.style.borderColor = count % 2 === 0 ? "#00ffee" : "#44ff44";
-        hudAttaque3.style.boxShadow   = count % 2 === 0 ? "0 0 12px #00ffee" : "0 0 12px #44ff44";
-        count++;
-    }, 150);
-    activeCooldowns["double_dash_fenetre_iv"] = iv;
-});
-
-socket.on("double_dash_fenetre_expiree", () => {
-    arreterClignotementDoubleDash();
-    hudAttaque3.style.borderColor = "#555";
-    hudAttaque3.style.boxShadow   = "";
-});
-
 socket.on("dash_debut", ({ couleur }) => {
     if (!monId || !elementsDuJeu[monId]) return;
     const { div } = elementsDuJeu[monId];

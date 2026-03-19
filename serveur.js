@@ -15,11 +15,12 @@ const ARENA_HEIGHT = 2500;
 const CHAR_SIZE    = 50;
 
 const CLASSES = {
-    hero:       { pv: 300, resistance: 20, couleur: "#e74c3c" },
+    hero:       { pv: 300, resistance: 20, couleur: "#5121ffff" },
     mage_feu:   { pv: 200, resistance: 10, couleur: "#ff6600" },
     mage_glace: { pv: 200, resistance: 10, couleur: "#88ddff" },
     archer:     { pv: 220, resistance: 12, couleur: "#27ae60" },
-    guerrier:   { pv: 350, resistance: 30, couleur: "#e67e22" },
+    guerrier:   { pv: 400, resistance: 30, couleur: "#e67e22" },
+    goblin:     { pv: 160, resistance: 15, couleur: "#44cc44", vitesse: 1.5 }, // rapide, fragile
 };
 
 //==============================================
@@ -59,7 +60,7 @@ const ATTAQUES = {
     },
 
     // --------------------------------------------------
-    // MAGE DE FEU (ancien "mage", renommé)
+    // MAGE DE FEU 
     // --------------------------------------------------
     mage_feu: {
         attaque1: {
@@ -70,7 +71,7 @@ const ATTAQUES = {
             sprite: "bouledefeu.png",
         },
         attaque2: {
-            // Météore : zone météorite + laisse une zone de brûlure persistante
+            // Météore : zone météorite + laisse une zone de brulure persistante
             type: "zone_combo",
             // Phase 1 : impact de météorite
             impact: {
@@ -151,7 +152,7 @@ const ATTAQUES = {
         attaque2: {
             type: "zone", forme: "meteorite",
             degats: 50, resistance_mult: 1,
-            rayon: 120, dureeAffichage: 600, cooldown: 3000,
+            rayon: 120, dureeAffichage: 1200, cooldown: 3000,
             couleur: "#f1c40f", label: "Pluie de flèches",
             sprite: "pluiedefleches.png",
             telegraphe: { delai: 500, couleur: "#f1c40f" },
@@ -163,11 +164,54 @@ const ATTAQUES = {
             couleur: "#aaffaa", label: "Dash",
         },
     },
+    goblin: {
+        attaque1: {
+            // Laser courte portée — applique un ralentissement à la cible touchée
+            type: "zone", forme: "laser",
+            degats: 35, resistance_mult: 1,
+            longueur: 120, largeur: 50,
+            dureeAffichage: 150, cooldown: 600,
+            couleur: "#88ff44",
+            label: "Poignardage",
+            // Effet appliqué aux joueurs touchés
+            effet_touche: {
+                type: "ralenti",
+                mult: 0.4,      // vitesse réduite à 40%
+                duree: 2000,    // 2 secondes
+            },
+        },
+        attaque2: {
+            // Laser courte portée — applique un poison (dégâts sur la durée)
+            type: "zone", forme: "laser",
+            degats: 20, resistance_mult: 1,
+            longueur: 120, largeur: 50,
+            dureeAffichage: 150, cooldown: 1000,
+            couleur: "#aa44ff",
+            label: "Poignard empoisonné",
+            // Poison : zone persistante sur le joueur touché (simulé comme une brûlure courte)
+            effet_touche: {
+                type: "poison",
+                degats: 5,          // dégâts/tick
+                resistance_mult: 0, // ignore la résistance
+                duree: 3000,
+                tickRate: 500,
+                couleur: "#aa44ff",
+            },
+        },
+        attaque3: {
+            type: "double_dash",
+            distance: 280, cooldown: 3000,
+            vitesseDash: 32, dureeDash: 150,
+            fenetreSec: 2000,   // délai max entre les deux dashes
+            couleur: "#88ff44", label: "Double Dash",
+        },
+    },
+
     guerrier: {
         attaque1: {
             type: "zone", forme: "arc",
             degats: 80, resistance_mult: 1,
-            rayon: 90, angleOuverture: 90,
+            rayon: 100, angleOuverture: 90,
             dureeAffichage: 250, cooldown: 800,
             couleur: "#e67e22", label: "Coup d'épée",
         },
@@ -179,7 +223,7 @@ const ATTAQUES = {
         },
         attaque3: {
             type: "boost",
-            duree: 2000, speedMult: 2.5, cooldown: 5000,
+            duree: 2000, speedMult: 2.5, cooldown: 4000,
             couleur: "#ff8800", label: "Sprint",
         },
     },
@@ -249,6 +293,7 @@ class AttaqueZone {
         this.angleOuverture = stats.angleOuverture ?? 90;
         this.longueur       = stats.longueur       ?? 300;
         this.largeur        = stats.largeur        ?? 20;
+        this.effet_touche   = stats.effet_touche   ?? null;
         this.victimesImpactees = new Set();
     }
     estExpire() { return Date.now() - this.createdAt > this.dureeAffichage; }
@@ -424,7 +469,7 @@ function creerPersonnage(socketId, nomJoueur, classe, equipe) {
     let couleur = stats.couleur;
     if (equipe === "blue") couleur = "#0080ff";
     if (equipe === "red")  couleur = "#ff4040";
-    return { id: socketId, nomJoueur, classe, equipe, pv: stats.pv, pvMax: stats.pv, resistance: stats.resistance, couleur, x, y };
+    return { id: socketId, nomJoueur, classe, equipe, pv: stats.pv, pvMax: stats.pv, resistance: stats.resistance, vitesseMult: stats.vitesse ?? 1, couleur, x, y };
 }
 
 function verifierCooldown(socketId, nomAttaque, cooldownMs) {
@@ -455,6 +500,45 @@ function appliquerDegatsZone(zone) {
                 console.log(`[Mort] ${joueur.nomJoueur} éliminé par ${lanceurNom} !`);
                 io.emit("joueur_elimine", { victimeId: joueur.id, tueurNom: lanceurNom, victimeNom: joueur.nomJoueur });
             }
+            // Appliquer l'effet sur la cible si la zone en a un
+            if (zone.effet_touche) {
+                if (!effets[joueur.id]) effets[joueur.id] = {};
+                const et = zone.effet_touche;
+                if (et.type === "ralenti") {
+                    effets[joueur.id].ralenti = { actif: true, mult: et.mult, finAt: Date.now() + et.duree };
+                    console.log(`[Ralenti] ${joueur.nomJoueur} ralenti pour ${et.duree}ms`);
+                } else if (et.type === "poison") {
+                    // Crée une zone persistante de poison centrée sur le joueur — elle se déplace avec lui
+                    // Note : simplification — le poison est posé à la position actuelle, pas mobile
+                    const zpId = ++zonePersistanteIdCounter;
+                    const zp = Object.create(ZonePersistante.prototype);
+                    Object.assign(zp, {
+                        id: zpId, lanceurId: zone.lanceurId, equipe: zone.equipe,
+                        x: joueur.x + CHAR_SIZE / 2, y: joueur.y + CHAR_SIZE / 2,
+                        forme: "cercle_persistant", rayon: 1,
+                        degats: et.degats, resistance_mult: et.resistance_mult ?? 0,
+                        couleur: et.couleur, duree: et.duree, tickRate: et.tickRate,
+                        dureeAffichage: et.duree, createdAt: Date.now(), dernierTick: Date.now(),
+                        // Surcharge : touche uniquement ce joueur spécifique (pas de rayon)
+                        cibleId: joueur.id,
+                        estExpire() { return Date.now() - this.createdAt > this.duree; },
+                        doitFaireDegats() {
+                            const now = Date.now();
+                            if (now - this.dernierTick >= this.tickRate) { this.dernierTick = now; return true; }
+                            return false;
+                        },
+                        toucheJoueur(j) { return j.id === this.cibleId; },
+                        toJSON() {
+                            const elapsed = Date.now() - this.createdAt;
+                            return { id: this.id, x: joueur.x + CHAR_SIZE/2, y: joueur.y + CHAR_SIZE/2,
+                                     rayon: 18, couleur: this.couleur,
+                                     ratioRestant: Math.max(0, 1 - elapsed / this.duree) };
+                        },
+                    });
+                    zonesPersistantes[zpId] = zp;
+                    console.log(`[Poison] ${joueur.nomJoueur} empoisonné pour ${et.duree}ms`);
+                }
+            }
         }
     }
 }
@@ -468,6 +552,11 @@ function broadcastGameState() {
             boostActif:    effets[j.id]?.boost?.actif    ?? false,
             dashActif:     effets[j.id]?.dash?.actif     ?? false,
             dashCouleur:   effets[j.id]?.dash?.actif ? (ATTAQUES[j.classe]?.attaque3?.couleur ?? "#fff") : null,
+            ralentiActif:  effets[j.id]?.ralenti?.actif ?? false,
+            facingX:       j.facingX ?? 1,
+            isMoving:      !!(keysPressed[j.id]?.["z"] || keysPressed[j.id]?.["s"] ||
+                              keysPressed[j.id]?.["q"] || keysPressed[j.id]?.["d"] ||
+                              effets[j.id]?.dash?.actif),
         })),
         projectiles:       Object.values(projectiles).map(p => p.toJSON()),
         zones:             Object.values(zonesActives).map(z => z.toJSON()),
@@ -535,16 +624,44 @@ function serverGameLoop() {
             effet.boost.actif = false;
             dirty = true;
         }
+        // Ralenti (poignardage goblin) : expire automatiquement
+        if (effet.ralenti?.actif && now >= effet.ralenti.finAt) {
+            effet.ralenti.actif = false;
+            dirty = true;
+        }
         // Dash animé : expire → pose le cooldown et informe le client
         if (effet.dash?.actif && now >= effet.dash.finAt) {
             effet.dash.actif = false;
             const joueur = joueurs[sid];
             if (joueur) {
                 cooldowns[sid] = cooldowns[sid] || {};
-                cooldowns[sid]["attaque3"] = now;
-                console.log(`[Dash] ${joueur.nomJoueur} — fin du dash, cooldown lancé`);
-                io.to(sid).emit("attaque_ok", { attaque: "attaque3", cooldown: effet.dash.cooldown });
+                if (effet.dash.cooldown > 0) {
+                    // Cooldown réel (2e dash ou dash normal)
+                    cooldowns[sid]["attaque3"] = now;
+                    io.to(sid).emit("attaque_ok", { attaque: "attaque3", cooldown: effet.dash.cooldown });
+                } else {
+                    // 1er dash du double : pas de cooldown, mais informe quand même le client
+                    // qu'il peut relancer (case HUD disponible)
+                    io.to(sid).emit("double_dash_pret");
+                }
+                console.log(`[Dash] ${joueur.nomJoueur} — fin du dash`);
                 io.to(sid).emit("dash_fin");
+            }
+            dirty = true;
+        }
+
+        // Fenêtre du double dash expirée sans 2e dash → lance le cooldown
+        if (effet.doubleDash?.charges === 1 && now >= effet.doubleDash.fenetreFinAt) {
+            effet.doubleDash.charges = 0;
+            const joueur = joueurs[sid];
+            if (joueur) {
+                const statsDash = ATTAQUES[joueur.classe]?.attaque3;
+                if (statsDash) {
+                    cooldowns[sid]["attaque3"] = now;
+                    io.to(sid).emit("attaque_ok", { attaque: "attaque3", cooldown: statsDash.cooldown });
+                    io.to(sid).emit("double_dash_fenetre_expiree");
+                    console.log(`[DoubleDash] ${joueur.nomJoueur} — fenêtre expirée, cooldown lancé`);
+                }
             }
             dirty = true;
         }
@@ -560,6 +677,7 @@ function serverGameLoop() {
             const dash = effets[socketId].dash;
             perso.x = Math.max(0, Math.min(ARENA_WIDTH  - CHAR_SIZE, perso.x + dash.dirX * dash.vitesse));
             perso.y = Math.max(0, Math.min(ARENA_HEIGHT - CHAR_SIZE, perso.y + dash.dirY * dash.vitesse));
+            if (dash.dirX !== 0) perso.facingX = dash.dirX > 0 ? 1 : -1;
             dirty = true;
             continue;
         }
@@ -574,13 +692,16 @@ function serverGameLoop() {
         dirty = true;
         const length = Math.sqrt(moveX * moveX + moveY * moveY);
 
-        // Calcule la vitesse effective (bouclier = ralenti, boost = accéléré)
-        let speedMult = 1;
+        // Calcule la vitesse effective (bouclier = ralenti, boost = accéléré, vitesseMult = stat de classe)
+        let speedMult = perso.vitesseMult ?? 1;
         if (effets[socketId]?.bouclier?.actif) speedMult = ATTAQUES[perso.classe]?.attaque2?.speedMult ?? 0.3;
         if (effets[socketId]?.boost?.actif)    speedMult = effets[socketId].boost.speedMult;
+        if (effets[socketId]?.ralenti?.actif)  speedMult *= effets[socketId].ralenti.mult;
 
         perso.x = Math.max(0, Math.min(ARENA_WIDTH  - CHAR_SIZE, perso.x + (moveX / length) * SPEED_BASE * speedMult));
         perso.y = Math.max(0, Math.min(ARENA_HEIGHT - CHAR_SIZE, perso.y + (moveY / length) * SPEED_BASE * speedMult));
+        // Mémorise la direction horizontale pour l'animation côté client
+        if (moveX !== 0) perso.facingX = moveX > 0 ? 1 : -1;
     }
 
     // --- Projectiles ---
@@ -855,6 +976,50 @@ function lancerAttaque(socket, nomAttaque, dirX, dirY, cibleX, cibleY) {
             return; // on sort avant l'emit attaque_ok ci-dessous
         }
 
+    } else if (stats.type === "double_dash") {
+        const keys = keysPressed[socket.id] || {};
+        let dx = 0, dy = 0;
+        if (keys["z"]) dy -= 1; if (keys["s"]) dy += 1;
+        if (keys["q"]) dx -= 1; if (keys["d"]) dx += 1;
+        if (dx === 0 && dy === 0) { dx = ndx; dy = ndy; }
+        const dLen = Math.sqrt(dx * dx + dy * dy);
+        if (dLen === 0) return;
+
+        // Récupère l'état du double dash pour ce joueur
+        if (!effets[socket.id].doubleDash) effets[socket.id].doubleDash = { charges: 0, fenetreFinAt: 0 };
+        const dd = effets[socket.id].doubleDash;
+        const now2 = Date.now();
+
+        // Détermine si on est dans la fenêtre du 2e dash
+        const dansLaFenetre = dd.charges === 1 && now2 < dd.fenetreFinAt;
+
+        if (dansLaFenetre) {
+            // 2e dash : lance et pose le vrai cooldown
+            dd.charges = 0;
+            dd.fenetreFinAt = 0;
+            cooldowns[socket.id]["attaque3"] = 0; // sera posé par la fin du dash
+        } else {
+            // 1er dash : lance et ouvre la fenêtre
+            dd.charges = 1;
+            dd.fenetreFinAt = now2 + stats.fenetreSec;
+            // Émet un signal spécial pour que le client affiche la fenêtre
+            socket.emit("double_dash_fenetre", { duree: stats.fenetreSec });
+            cooldowns[socket.id]["attaque3"] = 0; // pas de cooldown tant que fenêtre ouverte
+        }
+
+        // Lance le dash animé
+        effets[socket.id].dash = {
+            actif:    true,
+            dirX:     dx / dLen,
+            dirY:     dy / dLen,
+            vitesse:  stats.vitesseDash,
+            finAt:    now2 + stats.dureeDash,
+            cooldown: dansLaFenetre ? stats.cooldown : 0, // cooldown seulement au 2e
+            estDoubleDashFinal: dansLaFenetre,
+        };
+        socket.emit("dash_debut", { couleur: stats.couleur });
+        return; // attaque_ok géré par fin de dash
+
     } else if (stats.type === "boost") {
         if (!effets[socket.id]) effets[socket.id] = {};
         effets[socket.id].boost = { actif: true, finAt: Date.now() + stats.duree, speedMult: stats.speedMult };
@@ -884,7 +1049,7 @@ io.on("connection", (socket) => {
         joueurs[socket.id]     = perso;
         keysPressed[socket.id] = {};
         cooldowns[socket.id]   = {};
-        effets[socket.id]      = { bouclier: { actif: false }, boost: { actif: false }, dash: { actif: false } };
+        effets[socket.id]      = { bouclier: { actif: false }, boost: { actif: false }, dash: { actif: false }, ralenti: { actif: false } };
 
         equipesEnAttente[equipe] = equipesEnAttente[equipe].filter(m => m.id !== socket.id);
         const membres = equipesEnAttente[equipe].map(m => ({ nom: m.nom || "Anonyme" }));
