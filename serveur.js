@@ -14,6 +14,95 @@ const ARENA_WIDTH  = 2500;
 const ARENA_HEIGHT = 2500;
 const CHAR_SIZE    = 50;
 
+//==============================================
+// OBSTACLES — polygones convexes
+//
+// Chaque obstacle est défini par ses sommets : { pts: [[x1,y1],[x2,y2],...] }
+// Les points doivent être dans l'ordre (horaire ou anti-horaire), polygone CONVEXE.
+//   Rectangle axe-aligné : pts: [[100,200],[300,200],[300,240],[100,240]]
+//   Mur diagonal :         pts: [[100,100],[300,120],[295,160],[95,140]]
+//   Triangle :             pts: [[400,300],[600,300],[500,500]]
+//==============================================
+const OBSTACLES = [
+    { pts: [[2300,0],[2300,2500],[2500,2500],[2500,0]] },   
+    { pts: [[2050,980],[2050,1350],[2500,1350],[2500,980]] },   
+    { pts: [[2180,1350],[2180,2500],[2500,2500],[2500,0]] }, 
+    { pts: [[0,2040],[2180,2050],[2500,2500],[0,2500]] }, 
+    { pts: [[680,2040],[680,1777],[560,1623],[300,1570],[0,1570],[0,2040]] }, 
+    { pts: [[256,1570],[256,875],[0,875],[0,1570]] }, 
+    { pts: [[0,713],[143,713],[250,600],[378,457],[378,0],[0,0]] }, 
+    { pts: [[378,426],[1560,426],[2500,0],[378,0]] }, 
+    { pts: [[1560,426],[1500,576],[1524,642],[1707,888],[2050,980],[2500,980],[2500,0]] },
+    { pts: [[1500,576],[1524,642],[1707,888]] },
+    { pts: [[524,1024],[605,968],[707,1000],[722,1007],[740,1070],[660,1109],[516,1080]] },
+    { pts: [[256,1068],[374,1244],[254,1309]] },
+    { pts: [[410,1146],[490,1173],[507,1252],[497,1309],[376,1332],[254,1309]] },
+    { pts: [[1150,1375],[1300,1363],[1313,1388],[1240,1458],[1156,1426]] },
+    { pts: [[2180,1975],[1970,1975],[2006,1669],[2180,1714]] },
+    { pts: [[1973,1943],[1828,1879],[1828,1758],[2006,1669]] },
+    { pts: [[1828,1879],[1666,1879],[1647,1775],[1828,1758]] },
+    { pts: [[1615,1575],[1761,1513],[1788,1564],[1707,1627],[1615,1627]] },
+    { pts: [[960,660],[1141,558],[1141,0],[821,650],[810,576]] },
+    
+];
+
+// --- SAT (Separating Axis Theorem) ---
+function projeterPolygone(pts, nx, ny) {
+    let min = Infinity, max = -Infinity;
+    for (const [px, py] of pts) {
+        const d = px * nx + py * ny;
+        if (d < min) min = d;
+        if (d > max) max = d;
+    }
+    return [min, max];
+}
+function axesPolygone(pts) {
+    const axes = [];
+    for (let i = 0; i < pts.length; i++) {
+        const [ax, ay] = pts[i];
+        const [bx, by] = pts[(i + 1) % pts.length];
+        const ex = bx - ax, ey = by - ay;
+        const len = Math.sqrt(ex * ex + ey * ey);
+        if (len > 0) axes.push([-ey / len, ex / len]);
+    }
+    return axes;
+}
+function polygonesSeChevauchent(ptsA, ptsB) {
+    for (const [nx, ny] of [...axesPolygone(ptsA), ...axesPolygone(ptsB)]) {
+        const [minA, maxA] = projeterPolygone(ptsA, nx, ny);
+        const [minB, maxB] = projeterPolygone(ptsB, nx, ny);
+        if (maxA < minB || maxB < minA) return false;
+    }
+    return true;
+}
+function rectEnPts(px, py, w, h) {
+    return [[px, py], [px + w, py], [px + w, py + h], [px, py + h]];
+}
+function cercleEnPts(cx, cy, r) {
+    const pts = [];
+    for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+    }
+    return pts;
+}
+// Teste si le rectangle d'un joueur touche un obstacle
+function collisionObstacle(px, py, pw, ph) {
+    const rect = rectEnPts(px, py, pw, ph);
+    for (const o of OBSTACLES) {
+        if (polygonesSeChevauchent(rect, o.pts)) return true;
+    }
+    return false;
+}
+// Teste si un projectile (cercle) touche un obstacle
+function pointDansObstacle(cx, cy, r) {
+    const cercle = cercleEnPts(cx, cy, r);
+    for (const o of OBSTACLES) {
+        if (polygonesSeChevauchent(cercle, o.pts)) return true;
+    }
+    return false;
+}
+
 const CLASSES = {
     hero:       { pv: 300, resistance: 20, couleur: "#5121ffff" },
     mage_feu:   { pv: 200, resistance: 10, couleur: "#ff6600" },
@@ -454,6 +543,11 @@ const telegraphesActifs  = {};  // id -> Telegraphe
 const equipesEnAttente = { blue: [], red: [] };
 const cooldowns        = {};
 
+// Score des équipes
+const SCORE_VICTOIRE = 5;
+const scores = { blue: 0, red: 0 };
+let partieTerminee = false;
+
 // États spéciaux actifs : bouclier, boost
 // effets[socketId] = { bouclier: { actif, finAt }, boost: { actif, finAt, speedMult } }
 const effets = {};
@@ -462,10 +556,25 @@ const effets = {};
 const historicChat      = [];
 const CHAT_HISTORIQUE_MAX = 200;
 
+const SPAWN_ZONES = {
+    blue: { xMin: 450,   yMin: 500,  xMax: 800,  yMax: 800 },
+    red:  { xMin: 1200, yMin: 1700,  xMax: 1550, yMax: 1900  },
+};
+
+function positionSpawnSure(equipe) {
+    const zone = SPAWN_ZONES[equipe] || { xMin: 100, yMin: 100, xMax: ARENA_WIDTH - 200, yMax: ARENA_HEIGHT - 200 };
+    for (let tentative = 0; tentative < 50; tentative++) {
+        const x = Math.floor(Math.random() * (zone.xMax - zone.xMin - CHAR_SIZE)) + zone.xMin;
+        const y = Math.floor(Math.random() * (zone.yMax - zone.yMin - CHAR_SIZE)) + zone.yMin;
+        if (!collisionObstacle(x, y, CHAR_SIZE, CHAR_SIZE)) return { x, y };
+    }
+    // Fallback : position fixe connue libre
+    return equipe === "blue" ? { x: 80, y: 1000 } : { x: 2100, y: 600 };
+}
+
 function creerPersonnage(socketId, nomJoueur, classe, equipe) {
     const stats = CLASSES[classe] || CLASSES.hero;
-    const x = Math.floor(Math.random() * (ARENA_WIDTH  - CHAR_SIZE - 200)) + 100;
-    const y = Math.floor(Math.random() * (ARENA_HEIGHT - CHAR_SIZE - 200)) + 100;
+    const { x, y } = positionSpawnSure(equipe);
     let couleur = stats.couleur;
     if (equipe === "blue") couleur = "#0080ff";
     if (equipe === "red")  couleur = "#ff4040";
@@ -485,11 +594,12 @@ function appliquerDegatsZone(zone) {
     for (const joueur of Object.values(joueurs)) {
         if (joueur.id === zone.lanceurId) continue;
         if (joueur.equipe === zone.equipe) continue;
-        if (joueur.pv <= 0) continue;
+        if (joueur.pv <= 0 || joueur.estMort) continue;
         // Ignore les joueurs avec bouclier ou dash actif
         if (effets[joueur.id]?.bouclier?.actif) continue;
         if (effets[joueur.id]?.dash?.actif)     continue;
         if (zone.toucheJoueur(joueur)) {
+            if (joueur.estMort) continue; // tué par une autre source ce même tick
             zone.victimesImpactees.add(joueur.id);
             const degats = Math.max(zone.degats - joueur.resistance * zone.resistance_mult, 0);
             joueur.pv = Math.max(0, joueur.pv - degats);
@@ -498,7 +608,7 @@ function appliquerDegatsZone(zone) {
             console.log(`[Zone ${zone.forme}] ${lanceurNom} → ${joueur.nomJoueur} : ${degats} dégâts (PV: ${joueur.pv}/${joueur.pvMax})`);
             if (joueur.pv <= 0) {
                 console.log(`[Mort] ${joueur.nomJoueur} éliminé par ${lanceurNom} !`);
-                io.emit("joueur_elimine", { victimeId: joueur.id, tueurNom: lanceurNom, victimeNom: joueur.nomJoueur });
+                handleKill(zone.lanceurId, joueur.id);
             }
             // Appliquer l'effet sur la cible si la zone en a un
             if (zone.effet_touche) {
@@ -543,6 +653,48 @@ function appliquerDegatsZone(zone) {
     }
 }
 
+function handleKill(lanceurId, victimeId) {
+    const lanceur = joueurs[lanceurId];
+    const victime = joueurs[victimeId];
+    if (!lanceur || !victime) return;
+    if (partieTerminee) return;
+    if (victime.estMort) return;
+
+    victime.estMort = true;  // verrou anti-double kill
+
+    // Ajoute un point à l'équipe du tueur
+    scores[lanceur.equipe] = (scores[lanceur.equipe] || 0) + 1;
+    console.log(`[Score] ${lanceur.nomJoueur} (${lanceur.equipe}) tue ${victime.nomJoueur} — Score: Bleu ${scores.blue} / Rouge ${scores.red}`);
+
+    io.emit("joueur_elimine", {
+        victimeId: victime.id,
+        tueurNom:  lanceur.nomJoueur,
+        victimeNom: victime.nomJoueur,
+        scores:    { ...scores },
+    });
+
+    // Force un broadcast immédiat avec le nouveau score
+    broadcastGameState();
+
+    // Envoie l'écran de mort au joueur tué (il doit cliquer pour respawn)
+    io.to(victimeId).emit("tu_es_mort");
+
+    // Vérifie victoire
+    if (scores[lanceur.equipe] >= SCORE_VICTOIRE) {
+        partieTerminee = true;
+        console.log(`[Victoire] Équipe ${lanceur.equipe} gagne !`);
+        io.emit("partie_terminee", { equipeGagnante: lanceur.equipe, scores: { ...scores } });
+
+        // Réinitialise l'état serveur après 10 secondes (le temps que les clients se déconnectent)
+        setTimeout(() => {
+            scores.blue    = 0;
+            scores.red     = 0;
+            partieTerminee = false;
+            console.log("[Partie] État serveur réinitialisé.");
+        }, 10000);
+    }
+}
+
 function broadcastGameState() {
     io.emit("game_state", {
         joueurs:     Object.values(joueurs).map(j => ({
@@ -562,6 +714,8 @@ function broadcastGameState() {
         zones:             Object.values(zonesActives).map(z => z.toJSON()),
         zonesPersistantes: Object.values(zonesPersistantes).map(z => z.toJSON()),
         telegraphes:       Object.values(telegraphesActifs).map(t => t.toJSON()),
+        obstacles:         OBSTACLES,
+        scores:            { ...scores },
     });
 }
 
@@ -675,8 +829,10 @@ function serverGameLoop() {
         // Dash animé en cours : déplacement forcé, inputs ignorés
         if (effets[socketId]?.dash?.actif) {
             const dash = effets[socketId].dash;
-            perso.x = Math.max(0, Math.min(ARENA_WIDTH  - CHAR_SIZE, perso.x + dash.dirX * dash.vitesse));
-            perso.y = Math.max(0, Math.min(ARENA_HEIGHT - CHAR_SIZE, perso.y + dash.dirY * dash.vitesse));
+            const dNewX = Math.max(0, Math.min(ARENA_WIDTH  - CHAR_SIZE, perso.x + dash.dirX * dash.vitesse));
+            const dNewY = Math.max(0, Math.min(ARENA_HEIGHT - CHAR_SIZE, perso.y + dash.dirY * dash.vitesse));
+            if (!collisionObstacle(dNewX, perso.y, CHAR_SIZE, CHAR_SIZE)) perso.x = dNewX;
+            if (!collisionObstacle(perso.x, dNewY, CHAR_SIZE, CHAR_SIZE)) perso.y = dNewY;
             if (dash.dirX !== 0) perso.facingX = dash.dirX > 0 ? 1 : -1;
             dirty = true;
             continue;
@@ -698,8 +854,10 @@ function serverGameLoop() {
         if (effets[socketId]?.boost?.actif)    speedMult = effets[socketId].boost.speedMult;
         if (effets[socketId]?.ralenti?.actif)  speedMult *= effets[socketId].ralenti.mult;
 
-        perso.x = Math.max(0, Math.min(ARENA_WIDTH  - CHAR_SIZE, perso.x + (moveX / length) * SPEED_BASE * speedMult));
-        perso.y = Math.max(0, Math.min(ARENA_HEIGHT - CHAR_SIZE, perso.y + (moveY / length) * SPEED_BASE * speedMult));
+        const newX = Math.max(0, Math.min(ARENA_WIDTH  - CHAR_SIZE, perso.x + (moveX / length) * SPEED_BASE * speedMult));
+        const newY = Math.max(0, Math.min(ARENA_HEIGHT - CHAR_SIZE, perso.y + (moveY / length) * SPEED_BASE * speedMult));
+        if (!collisionObstacle(newX, perso.y, CHAR_SIZE, CHAR_SIZE)) perso.x = newX;
+        if (!collisionObstacle(perso.x, newY, CHAR_SIZE, CHAR_SIZE)) perso.y = newY;
         // Mémorise la direction horizontale pour l'animation côté client
         if (moveX !== 0) perso.facingX = moveX > 0 ? 1 : -1;
     }
@@ -713,10 +871,15 @@ function serverGameLoop() {
             if (proj.explosion) creerEclats(proj);
             delete projectiles[pid]; dirty = true; continue;
         }
+        // Collision avec un obstacle
+        if (pointDansObstacle(proj.x, proj.y, proj.taille)) {
+            if (proj.explosion) creerEclats(proj);
+            delete projectiles[pid]; dirty = true; continue;
+        }
         for (const joueur of Object.values(joueurs)) {
             if (joueur.id === proj.lanceurId) continue;
             if (joueur.equipe === proj.equipe) continue;
-            if (joueur.pv <= 0) continue;
+            if (joueur.pv <= 0 || joueur.estMort) continue;
 
             // Invincible pendant le dash
             if (effets[joueur.id]?.dash?.actif) continue;
@@ -734,6 +897,7 @@ function serverGameLoop() {
             }
 
             if (proj.toucheJoueur(joueur)) {
+                if (joueur.estMort) break; // tué par une autre source ce même tick
                 const degats = Math.max(proj.degats - joueur.resistance, 0);
                 joueur.pv = Math.max(0, joueur.pv - degats);
                 const lanceur = joueurs[proj.lanceurId];
@@ -741,7 +905,7 @@ function serverGameLoop() {
                 console.log(`[Projectile] ${lanceurNom} → ${joueur.nomJoueur} : ${degats} dégâts (PV: ${joueur.pv}/${joueur.pvMax})`);
                 if (joueur.pv <= 0) {
                     console.log(`[Mort] ${joueur.nomJoueur} éliminé par ${lanceurNom} !`);
-                    io.emit("joueur_elimine", { victimeId: joueur.id, tueurNom: lanceurNom, victimeNom: joueur.nomJoueur });
+                    handleKill(proj.lanceurId, joueur.id);
                 }
                 if (proj.disparitAuContact) {
                     if (proj.explosion) creerEclats(proj); // explose à l'impact
@@ -771,7 +935,7 @@ function serverGameLoop() {
             for (const joueur of Object.values(joueurs)) {
                 if (joueur.id === zone.lanceurId) continue;
                 if (joueur.equipe === zone.equipe) continue;
-                if (joueur.pv <= 0) continue;
+                if (joueur.pv <= 0 || joueur.estMort) continue;
                 if (effets[joueur.id]?.bouclier?.actif) continue;
                 if (effets[joueur.id]?.dash?.actif)     continue;
                 if (zone.toucheJoueur(joueur)) {
@@ -782,7 +946,7 @@ function serverGameLoop() {
                     console.log(`[Brûlure] ${lanceurNom} → ${joueur.nomJoueur} : ${degats} dégâts (PV: ${joueur.pv}/${joueur.pvMax})`);
                     if (joueur.pv <= 0) {
                         console.log(`[Mort] ${joueur.nomJoueur} éliminé par ${lanceurNom} !`);
-                        io.emit("joueur_elimine", { victimeId: joueur.id, tueurNom: lanceurNom, victimeNom: joueur.nomJoueur });
+                        handleKill(zone.lanceurId, joueur.id);
                     }
                 }
             }
@@ -843,6 +1007,7 @@ setInterval(serverGameLoop, 1000 / 60);
 function lancerAttaque(socket, nomAttaque, dirX, dirY, cibleX, cibleY) {
     const tireur = joueurs[socket.id];
     if (!tireur || tireur.pv <= 0) return;
+    if (partieTerminee) return;
 
     // Pendant le bouclier ou le dash, aucune autre attaque ne peut être lancée
     if (effets[socket.id]?.bouclier?.actif && nomAttaque !== "attaque2") {
@@ -952,9 +1117,22 @@ function lancerAttaque(socket, nomAttaque, dirX, dirY, cibleX, cibleY) {
         if (dLen === 0) return;
 
         if (stats.estTeleportation) {
-            // Téléportation instantanée (mage uniquement)
-            tireur.x = Math.max(0, Math.min(ARENA_WIDTH  - CHAR_SIZE, tireur.x + (dx / dLen) * stats.distance));
-            tireur.y = Math.max(0, Math.min(ARENA_HEIGHT - CHAR_SIZE, tireur.y + (dy / dLen) * stats.distance));
+            // Téléportation instantanée : avance par pas pour s'arrêter avant un obstacle
+            const stepSize = CHAR_SIZE / 2;
+            const totalSteps = Math.ceil(stats.distance / stepSize);
+            const stepX = (dx / dLen) * stepSize;
+            const stepY = (dy / dLen) * stepSize;
+            let destX = tireur.x;
+            let destY = tireur.y;
+            for (let i = 0; i < totalSteps; i++) {
+                const nextX = Math.max(0, Math.min(ARENA_WIDTH  - CHAR_SIZE, destX + stepX));
+                const nextY = Math.max(0, Math.min(ARENA_HEIGHT - CHAR_SIZE, destY + stepY));
+                if (collisionObstacle(nextX, nextY, CHAR_SIZE, CHAR_SIZE)) break;
+                destX = nextX;
+                destY = nextY;
+            }
+            tireur.x = destX;
+            tireur.y = destY;
             console.log(`[${nomAttaque}] ${tireur.nomJoueur} — "${stats.label}" (téléportation)`);
             broadcastGameState();
         } else {
@@ -1088,6 +1266,20 @@ io.on("connection", (socket) => {
 
     socket.on("keys_update", ({ keys }) => {
         if (keysPressed[socket.id] !== undefined) keysPressed[socket.id] = keys;
+    });
+
+    socket.on("demande_respawn", () => {
+        const joueur = joueurs[socket.id];
+        if (!joueur || !joueur.estMort) return;
+        const stats = CLASSES[joueur.classe] || CLASSES.hero;
+        joueur.pv      = stats.pv;
+        joueur.estMort = false;
+        const spawnPos = positionSpawnSure(joueur.equipe);
+        joueur.x = spawnPos.x;
+        joueur.y = spawnPos.y;
+        socket.emit("respawn");
+        broadcastGameState();
+        console.log(`[Respawn] ${joueur.nomJoueur} réapparaît`);
     });
 
     socket.on("attaque1", ({ dirX, dirY, cibleX, cibleY }) => lancerAttaque(socket, "attaque1", dirX, dirY, cibleX, cibleY));

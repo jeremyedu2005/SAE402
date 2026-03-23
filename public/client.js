@@ -81,6 +81,30 @@ const animIntervals = {};
 // CAMÉRA
 //==============================================
 const arena = document.querySelector(".arena");
+
+//==============================================
+// OBSTACLES — dessinés une seule fois en SVG
+//==============================================
+let obstaclesRendus = false;
+
+function dessinerObstacles(obstacles) {
+    if (obstaclesRendus || !obstacles?.length) return;
+    obstaclesRendus = true;
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.cssText = `
+        position: absolute; left: 0; top: 0;
+        width: 100%; height: 100%;
+        pointer-events: none; z-index: 2; overflow: visible;
+    `;
+    for (const o of obstacles) {
+        const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+        poly.setAttribute("points", o.pts.map(([x, y]) => `${x},${y}`).join(" "));
+        poly.setAttribute("fill",         "none");
+        poly.setAttribute("stroke",       "none");
+        svg.appendChild(poly);
+    }
+    arena.appendChild(svg);
+}
 arena.style.width    = ARENA_WIDTH  + "px";
 arena.style.height   = ARENA_HEIGHT + "px";
 arena.style.position = "absolute";
@@ -781,6 +805,292 @@ const hudAttaque1 = creerCaseHud("hud-atq1", "—", "🖱 G");
 const hudAttaque2 = creerCaseHud("hud-atq2", "—", "🖱 D");
 const hudAttaque3 = creerCaseHud("hud-atq3", "—", "Espace");
 
+//==============================================
+// SCOREBOARD
+//==============================================
+const SCORE_VICTOIRE = 5;
+
+const scoreboard = document.createElement("div");
+scoreboard.style.cssText = `
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 0;
+    background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px; padding: 8px 20px; z-index: 300;
+    font-family: 'Orbitron', Arial, sans-serif; pointer-events: none;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+`;
+
+const scoreBlue = document.createElement("div");
+scoreBlue.style.cssText = `
+    color: #4fc3f7; font-size: 22px; font-weight: 900;
+    min-width: 32px; text-align: right; letter-spacing: 1px;
+`;
+scoreBlue.textContent = "0";
+
+const scoreSep = document.createElement("div");
+scoreSep.style.cssText = `
+    color: rgba(255,255,255,0.3); font-size: 18px;
+    padding: 0 14px; font-weight: 400;
+`;
+scoreSep.textContent = "—";
+
+const scoreRed = document.createElement("div");
+scoreRed.style.cssText = `
+    color: #ef5350; font-size: 22px; font-weight: 900;
+    min-width: 32px; text-align: left; letter-spacing: 1px;
+`;
+scoreRed.textContent = "0";
+
+// Barres de progression sous les scores
+const barContainer = document.createElement("div");
+barContainer.style.cssText = `
+    position: absolute; bottom: 0; left: 10px; right: 10px; height: 3px;
+    display: flex; border-radius: 0 0 12px 12px; overflow: hidden;
+`;
+const barBlue = document.createElement("div");
+barBlue.style.cssText = `height: 100%; background: #4fc3f7; transition: width 0.4s ease; width: 0%;`;
+const barGap  = document.createElement("div");
+barGap.style.cssText  = `height: 100%; background: transparent; width: 4px; flex-shrink: 0;`;
+const barRed  = document.createElement("div");
+barRed.style.cssText  = `height: 100%; background: #ef5350; transition: width 0.4s ease; width: 0%;`;
+barContainer.appendChild(barBlue);
+barContainer.appendChild(barGap);
+barContainer.appendChild(barRed);
+
+scoreboard.appendChild(scoreBlue);
+scoreboard.appendChild(scoreSep);
+scoreboard.appendChild(scoreRed);
+scoreboard.appendChild(barContainer);
+document.body.appendChild(scoreboard);
+
+function mettreAJourScore(scores) {
+    if (!scores) return;
+    const b = scores.blue ?? 0;
+    const r = scores.red  ?? 0;
+    console.log("[Score UI] blue =", b, "red =", r, "| scoreBlue el =", scoreBlue, "scoreRed el =", scoreRed);
+    scoreBlue.textContent = b;
+    scoreRed.textContent  = r;
+    const maxBar = 45;
+    barBlue.style.width = ((b / SCORE_VICTOIRE) * maxBar) + "%";
+    barRed.style.width  = ((r / SCORE_VICTOIRE) * maxBar) + "%";
+}
+
+//==============================================
+// ÉCRAN FIN DE PARTIE (VICTOIRE / DEFAITE)
+//==============================================
+let overlayFinPartie = null;
+
+function afficherEcranFin(estVainqueur, equipeGagnante, scores) {
+    if (overlayFinPartie) overlayFinPartie.remove();
+
+    const couleurVic  = "#4fc3f7"; // toujours bleu clair pour la victoire
+    const couleurDef  = equipeGagnante === "blue" ? "#ef5350" : "#4fc3f7"; // couleur équipe perdante
+    const couleur     = estVainqueur ? couleurVic : couleurDef;
+    const nomGagnant  = equipeGagnante === "blue" ? "EQUIPE BLEUE" : "EQUIPE ROUGE";
+    const nomPerdant  = equipeGagnante === "blue" ? "EQUIPE ROUGE" : "EQUIPE BLEUE";
+
+    overlayFinPartie = document.createElement("div");
+    overlayFinPartie.style.cssText = `
+        position: fixed; inset: 0; z-index: 600;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        font-family: 'Orbitron', Arial, sans-serif;
+        pointer-events: all;
+        background: radial-gradient(ellipse at center, ${couleur}18 0%, rgba(0,0,0,0.95) 65%);
+    `;
+
+    // Titre
+    const titre = document.createElement("div");
+    titre.textContent = estVainqueur ? "VICTOIRE" : "DEFAITE";
+    titre.style.cssText = `
+        font-size: 80px; font-weight: 900; letter-spacing: 10px;
+        margin-bottom: 10px;
+        color: ${couleur};
+        text-shadow: 0 0 40px ${couleur}99, 0 0 80px ${couleur}44;
+        animation: fin-pulse 1.2s ease-in-out infinite alternate;
+    `;
+
+    // Sous-titre
+    const sous = document.createElement("div");
+    sous.textContent = estVainqueur
+        ? nomGagnant + " REMPORTE LA PARTIE"
+        : nomPerdant + " A GAGNE";
+    sous.style.cssText = `
+        font-size: 13px; font-weight: 400; letter-spacing: 4px;
+        color: rgba(255,255,255,0.5);
+        margin-bottom: 52px;
+    `;
+
+    // Scores
+    const scoresDiv = document.createElement("div");
+    scoresDiv.style.cssText = `
+        display: flex; margin-bottom: 52px;
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+        overflow: hidden;
+    `;
+    const blueBox = document.createElement("div");
+    blueBox.style.cssText = `
+        padding: 18px 44px; text-align: center;
+        background: rgba(79,195,247,0.08);
+        border-right: 1px solid rgba(255,255,255,0.08);
+    `;
+    blueBox.innerHTML = `<div style="color:#4fc3f7;font-size:10px;letter-spacing:3px;margin-bottom:8px;">BLEU</div>
+                         <div style="color:white;font-size:40px;font-weight:900;">${scores.blue}</div>`;
+    const redBox = document.createElement("div");
+    redBox.style.cssText = `
+        padding: 18px 44px; text-align: center;
+        background: rgba(239,83,80,0.08);
+    `;
+    redBox.innerHTML = `<div style="color:#ef5350;font-size:10px;letter-spacing:3px;margin-bottom:8px;">ROUGE</div>
+                        <div style="color:white;font-size:40px;font-weight:900;">${scores.red}</div>`;
+    scoresDiv.appendChild(blueBox);
+    scoresDiv.appendChild(redBox);
+
+    // Bouton
+    const btn = document.createElement("button");
+    btn.textContent = "RETOUR AU MENU";
+    btn.style.cssText = `
+        position: static !important;
+        display: block;
+        background: transparent;
+        color: ${couleur};
+        border: 2px solid ${couleur};
+        border-radius: 8px; padding: 14px 48px;
+        font-size: 13px; font-weight: 700; letter-spacing: 4px;
+        font-family: 'Orbitron', Arial, sans-serif;
+        cursor: pointer; transition: background 0.2s, color 0.2s;
+        margin: 0;
+    `;
+    btn.addEventListener("mouseenter", () => {
+        btn.style.background = couleur;
+        btn.style.color = "black";
+    });
+    btn.addEventListener("mouseleave", () => {
+        btn.style.background = "transparent";
+        btn.style.color = couleur;
+    });
+    btn.addEventListener("click", () => redirectMenu());
+
+    // Compte à rebours auto
+    const countdown = document.createElement("div");
+    countdown.style.cssText = `margin-top:18px; color:rgba(255,255,255,0.2); font-size:10px; letter-spacing:2px;`;
+    let restant = 10;
+    countdown.textContent = `REDIRECTION DANS ${restant}S`;
+    const iv = setInterval(() => {
+        restant--;
+        countdown.textContent = `REDIRECTION DANS ${restant}S`;
+        if (restant <= 0) { clearInterval(iv); redirectMenu(); }
+    }, 1000);
+
+    // Animation CSS
+    if (!document.getElementById("style-fin")) {
+        const s = document.createElement("style");
+        s.id = "style-fin";
+        s.textContent = `@keyframes fin-pulse { from { opacity:0.8; } to { opacity:1; } }`;
+        document.head.appendChild(s);
+    }
+
+    overlayFinPartie.appendChild(titre);
+    overlayFinPartie.appendChild(sous);
+    overlayFinPartie.appendChild(scoresDiv);
+    overlayFinPartie.appendChild(btn);
+    overlayFinPartie.appendChild(countdown);
+    document.body.appendChild(overlayFinPartie);
+}
+
+function redirectMenu() {
+    socket.disconnect();
+    localStorage.removeItem("nomJoueur");
+    localStorage.removeItem("classeChoisie");
+    localStorage.removeItem("equipeChoisie");
+    window.location.href = "../index.html";
+}
+
+function cacherFinPartie() {
+    if (overlayFinPartie) { overlayFinPartie.remove(); overlayFinPartie = null; }
+}
+
+//==============================================
+// ÉCRAN DE MORT
+//==============================================
+let overlayMort = null;
+
+function afficherEcranMort(tueurNom) {
+    if (overlayMort) overlayMort.remove();
+
+    overlayMort = document.createElement("div");
+    overlayMort.style.cssText = `
+        position: fixed; inset: 0; z-index: 450;
+        background: rgba(0,0,0,0.72);
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        font-family: 'Orbitron', Arial, sans-serif;
+    `;
+
+    // Titre ÉLIMINÉ
+    const titre = document.createElement("div");
+    titre.textContent = "💀 ÉLIMINÉ";
+    titre.style.cssText = `
+        color: #ef5350; font-size: 48px; font-weight: 900;
+        text-shadow: 0 0 30px #ef535088;
+        margin-bottom: 10px; letter-spacing: 4px;
+        animation: mort-pulse 0.6s ease-in-out infinite alternate;
+    `;
+
+    const sous = document.createElement("div");
+    sous.textContent = tueurNom ? `Par ${tueurNom}` : "";
+    sous.style.cssText = `
+        color: rgba(255,255,255,0.5); font-size: 16px;
+        margin-bottom: 40px; letter-spacing: 1px;
+    `;
+
+    // Bouton RÉAPPARAÎTRE
+    const btn = document.createElement("button");
+    btn.textContent = "⚔️ RÉAPPARAÎTRE";
+    btn.style.cssText = `
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white; border: none; border-radius: 10px;
+        padding: 16px 40px; font-size: 18px; font-weight: 700;
+        font-family: 'Orbitron', Arial, sans-serif;
+        cursor: pointer; letter-spacing: 2px;
+        box-shadow: 0 0 20px #e74c3c88;
+        transition: transform 0.1s, box-shadow 0.1s;
+    `;
+    btn.addEventListener("mouseenter", () => {
+        btn.style.transform  = "scale(1.05)";
+        btn.style.boxShadow  = "0 0 30px #e74c3ccc";
+    });
+    btn.addEventListener("mouseleave", () => {
+        btn.style.transform  = "scale(1)";
+        btn.style.boxShadow  = "0 0 20px #e74c3c88";
+    });
+    btn.addEventListener("click", () => {
+        socket.emit("demande_respawn");
+    });
+
+    // Injecte animation CSS
+    if (!document.getElementById("style-mort")) {
+        const s = document.createElement("style");
+        s.id = "style-mort";
+        s.textContent = `
+            @keyframes mort-pulse {
+                from { text-shadow: 0 0 20px #ef535066; }
+                to   { text-shadow: 0 0 50px #ef5350, 0 0 80px #ef535055; }
+            }
+        `;
+        document.head.appendChild(s);
+    }
+
+    overlayMort.appendChild(titre);
+    overlayMort.appendChild(sous);
+    overlayMort.appendChild(btn);
+    document.body.appendChild(overlayMort);
+}
+
+function cacherEcranMort() {
+    if (overlayMort) { overlayMort.remove(); overlayMort = null; }
+}
+
 const activeCooldowns = {};
 
 function arreterClignotementDoubleDash() {
@@ -838,7 +1148,9 @@ function afficherDureeBouclier(dureeMax) {
 //==============================================
 // SOCKET — affichage
 //==============================================
-socket.on("game_state", ({ joueurs, projectiles, zones, zonesPersistantes, telegraphes }) => {
+socket.on("game_state", ({ joueurs, projectiles, zones, zonesPersistantes, telegraphes, scores, obstacles }) => {
+    dessinerObstacles(obstacles);
+    if (scores) mettreAJourScore(scores);
     dessinerMinimap(joueurs);
 
     const idsPresents = new Set(joueurs.map(j => j.id));
@@ -903,13 +1215,39 @@ socket.on("game_state", ({ joueurs, projectiles, zones, zonesPersistantes, teleg
     }
 });
 
-socket.on("joueur_elimine", ({ victimeId, tueurNom, victimeNom }) => {
-    afficherNotification(`⚔️ ${tueurNom} a éliminé ${victimeNom} !`);
+socket.on("joueur_elimine", ({ victimeId, tueurNom, victimeNom, scores }) => {
+    afficherNotificationKill(tueurNom, victimeNom, scores);
+    if (scores) mettreAJourScore(scores);
     const el = elementsDuJeu[victimeId];
     if (el) el.div.style.opacity = "0.3";
+    // Si c'est moi qui suis mort → affiche l'écran de mort
+    if (victimeId === monId) afficherEcranMort(tueurNom);
 });
 socket.on("joueur_parti", ({ id }) => supprimerElementPersonnage(id));
 socket.on("erreur",       ({ message }) => alert("Erreur : " + message));
+
+socket.on("tu_es_mort", () => {
+    // Sécurité : affiche l'écran si pas encore visible
+    if (!overlayMort) afficherEcranMort(null);
+});
+
+socket.on("respawn", () => {
+    cacherEcranMort();
+    if (monId && elementsDuJeu[monId]) {
+        elementsDuJeu[monId].div.style.opacity = "1";
+    }
+});
+
+socket.on("partie_terminee", ({ equipeGagnante, scores }) => {
+    mettreAJourScore(scores);
+    cacherEcranMort(); // cache l'écran de mort si le joueur était mort
+    const estVainqueur = (monEquipe === equipeGagnante);
+    afficherEcranFin(estVainqueur, equipeGagnante, scores);
+});
+
+socket.on("partie_reset", () => {
+    // Plus utilisé — la redirection se fait côté client
+});
 
 socket.on("attaque_ok", ({ attaque, cooldown }) => {
     const map = { attaque1: hudAttaque1, attaque2: hudAttaque2, attaque3: hudAttaque3 };
@@ -978,12 +1316,51 @@ socket.on("rejoindre_ok", ({ monId: id, attaques, perso }) => {
 function afficherNotification(texte) {
     const notif = document.createElement("div");
     notif.style.cssText = `
-        position:fixed; top:20px; left:50%; transform:translateX(-50%);
+        position:fixed; top:70px; left:50%; transform:translateX(-50%);
         background:rgba(0,0,0,0.8); color:white; padding:10px 20px;
-        border-radius:8px; font-size:16px; z-index:100;
+        border-radius:8px; font-size:14px; z-index:100;
         border:1px solid #e74c3c; pointer-events:none;
+        white-space: nowrap;
     `;
     notif.textContent = texte;
+    document.body.appendChild(notif);
+    setTimeout(() => notif.remove(), 3000);
+}
+
+function afficherNotificationKill(tueurNom, victimeNom, scores) {
+    const notif = document.createElement("div");
+    notif.style.cssText = `
+        position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+        background: rgba(0,0,0,0.85); color: white;
+        padding: 10px 18px; border-radius: 10px; font-size: 14px;
+        z-index: 400; border: 1px solid #e74c3c; pointer-events: none;
+        display: flex; flex-direction: column; align-items: center; gap: 5px;
+        white-space: nowrap;
+    `;
+
+    const ligne1 = document.createElement("div");
+    ligne1.textContent = `⚔️ ${tueurNom} a éliminé ${victimeNom} !`;
+    ligne1.style.fontWeight = "bold";
+
+    notif.appendChild(ligne1);
+
+    if (scores) {
+        const ligne2 = document.createElement("div");
+        ligne2.style.cssText = "display:flex; gap:16px; font-size:13px; opacity:0.9;";
+
+        const blueSpan = document.createElement("span");
+        blueSpan.style.color = "#4fc3f7";
+        blueSpan.textContent = `🔵 Bleu : ${scores.blue}`;
+
+        const redSpan = document.createElement("span");
+        redSpan.style.color = "#ef5350";
+        redSpan.textContent = `🔴 Rouge : ${scores.red}`;
+
+        ligne2.appendChild(blueSpan);
+        ligne2.appendChild(redSpan);
+        notif.appendChild(ligne2);
+    }
+
     document.body.appendChild(notif);
     setTimeout(() => notif.remove(), 3000);
 }
