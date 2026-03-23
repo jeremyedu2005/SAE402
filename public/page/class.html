@@ -27,12 +27,17 @@
             </div>
 
             <p class="subtitle">Choisissez votre classe</p>
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
             <div class="classes-grid">
                 <div class="classe-card selected" data-classe="hero">
                     <div class="icone">🗡️</div>
                     <div class="nom">Héros</div>
                     <div class="stats">PV: 300 | RES: 20</div>
                 </div>
+<<<<<<< Updated upstream
                 <div class="classe-card" data-classe="mage_feu">
                     <div class="icone">🔥</div>
                     <div class="nom">Mage de Feu</div>
@@ -64,6 +69,46 @@
             <input type="text" id="nom" placeholder="Ex : ShadowBlade99" maxlength="20" />
             <p class="erreur" id="erreur">Merci d'entrer un nom de joueur.</p>
             
+=======
+
+                <div class="stats-bars-v2">
+                    <div class="bar-container">
+                        <img src="../img/icons/stats/hp.png" class="stat-icon" alt="HP">
+                        <div class="bar-wrap">
+                            <div class="bar"><div id="bar-pv" class="fill-pv"></div></div>
+                        </div>
+                        <span class="stat-value" id="val-pv">300</span>
+                    </div>
+                    <div class="bar-container">
+                        <img src="../img/icons/stats/res.png" class="stat-icon" alt="RES">
+                        <div class="bar-wrap">
+                            <div class="bar"><div id="bar-res" class="fill-res"></div></div>
+                        </div>
+                        <span class="stat-value" id="val-res">20</span>
+                    </div>
+                    <div class="bar-container">
+                        <img src="../img/icons/stats/dmg.png" class="stat-icon" alt="DMG">
+                        <div class="bar-wrap">
+                            <div class="bar"><div id="bar-dmg" class="fill-dmg"></div></div>
+                        </div>
+                        <span class="stat-value" id="val-dmg">60</span>
+                    </div>
+                    <div class="bar-container">
+                        <img src="../img/icons/stats/spd.png" class="stat-icon" alt="SPD">
+                        <div class="bar-wrap">
+                            <div class="bar"><div id="bar-spd" class="fill-spd"></div></div>
+                        </div>
+                        <span class="stat-value" id="val-spd">1.0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <input type="text" id="nom" placeholder="Ton pseudo..." maxlength="20" />
+                <p class="erreur" id="erreur" style="display:none;">Merci d'entrer un nom.</p>
+            </div>
+
+>>>>>>> Stashed changes
             <div class="actions">
                 <button class="btn" id="btn-connexion">ENTRER DANS L'ARÈNE</button>
                 <button class="btn btn-back" id="btn-back">Retour</button>
@@ -80,16 +125,22 @@
                     <div class="key-box key-s"><span>S</span><p>Reculer</p></div>
                     <div class="key-box key-d"><span>D</span><p>Droite</p></div>
                 </div>
+<<<<<<< Updated upstream
 
                 <hr class="panel-hr">
                 <h2 id="info-classe-nom" class="panel-class-title">CLASSE : HÉROS</h2>
                 <div id="info-classe-details"></div>
+=======
+                <h2 class="panel-title" id="panel-class-name">COMMANDES</h2>
+                <div id="info-classe-details" class="ability-list"></div>
+>>>>>>> Stashed changes
             </div>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+<<<<<<< Updated upstream
         const socket = io();
         let classeSelectionnee = "hero";
         const equipeChoisie = localStorage.getItem("equipeChoisie");
@@ -168,6 +219,135 @@
                     const li = document.createElement("li");
                     li.textContent = m.nom || "Joueur anonyme";
                     list.appendChild(li);
+=======
+        window.addEventListener('DOMContentLoaded', () => {
+            /* 8.1. INITIALISATION ET VARIABLES */
+            const socket = io();
+            let classeSelectionnee = "hero";
+            const equipeChoisie = localStorage.getItem("equipeChoisie");
+
+            /* 8.2. DONNÉES DES CLASSES */
+            const classData = {
+                hero: {
+                    nom: "HÉROS", pv: 300, res: 20, dmg: 60, spd: 1.0, role: "Équilibré", sprite: "hero.png",
+                    abilities: [
+                        { name: "Coup d'épée", key: "G", desc: "Un coup puissant en arc de cercle devant vous.", icon: "sword.png" },
+                        { name: "Bouclier", key: "D", desc: "Réduit les dégâts reçus et vous ralentit.", icon: "shield.png" },
+                        { name: "Dash", key: "Espace", desc: "Une ruée rapide dans votre direction actuelle.", icon: "dash.png" }
+                    ]
+                },
+                mage_feu: {
+                    nom: "MAGE DE FEU", pv: 200, res: 10, dmg: 55, spd: 1.0, role: "Burst DPS", sprite: "mage_feu.png",
+                    abilities: [
+                        { name: "Boule de feu", key: "G", desc: "Lance un projectile enflammé qui explose à l'impact.", icon: "fireball.png" },
+                        { name: "Météore", key: "D", desc: "Invoque un météore créant une zone de brûлure.", icon: "meteor.png" },
+                        { name: "Téléportation", key: "Espace", desc: "Clignement instantané vers votre curseur.", icon: "teleport.png" }
+                    ]
+                },
+                mage_glace: {
+                    nom: "MAGE DE GLACE", pv: 200, res: 10, dmg: 80, spd: 1.0, role: "Control", sprite: "mage_glace.png",
+                    abilities: [
+                        { name: "Éclats", key: "G", desc: "Projette des pics de glace gelant les ennemis.", icon: "ice_shards.png" },
+                        { name: "Laser", key: "D", desc: "Un rayon givrant continu qui traverse les cibles.", icon: "laser.png" },
+                        { name: "Téléportation", key: "Espace", desc: "Déplacement spectral à travers les obstacles.", icon: "teleport.png" }
+                    ]
+                },
+                archer: {
+                    nom: "ARCHER", pv: 220, res: 12, dmg: 40, spd: 1.0, role: "Distance", sprite: "archer.png",
+                    abilities: [
+                        { name: "Flèche", key: "G", desc: "Tir de précision rapide sur longue distance.", icon: "arrow.png" },
+                        { name: "Pluie", key: "D", desc: "Une salve de flèches tombe sur la zone ciblée.", icon: "arrow_rain.png" },
+                        { name: "Esquive", key: "Espace", desc: "Un saut agile pour se repositionнер.", icon: "dash.png" }
+                    ]
+                },
+                guerrier: {
+                    nom: "GUERRIER", pv: 400, res: 30, dmg: 80, spd: 1.0, role: "Tank", sprite: "guerrier.png",
+                    abilities: [
+                        { name: "Frappe", key: "G", desc: "Un lourd coup fracassant les armures.", icon: "heavy_hit.png" },
+                        { name: "Onde de choc", key: "D", desc: "Frappe le sol pour repousser les ennemis.", icon: "ground_slam.png" },
+                        { name: "Sprint", key: "Espace", desc: "Augmente massivement la vitesse de course.", icon: "sprint.png" }
+                    ]
+                },
+                goblin: {
+                    nom: "GOBLIN", pv: 160, res: 15, dmg: 35, spd: 1.5, role: "Assassin", sprite: "goblin.png",
+                    abilities: [
+                        { name: "Poignard", key: "G", desc: "Coup rapide appliquant un saignement.", icon: "dagger.png" },
+                        { name: "Fiole", key: "D", desc: "Lance un poison ralentissant les cibles.", icon: "poison.png" },
+                        { name: "Double Dash", key: "Espace", desc: "Permет de foncer deux fois de suite.", icon: "dash.png" }
+                    ]
+                }
+            };
+
+            /* 8.3. LOGIQUE DE L'INTERFACE UTILISATEUR */
+            const updateUI = (classe) => {
+                const data = classData[classe];
+                const spriteImg = document.getElementById("class-sprite");
+                if (spriteImg) spriteImg.src = `../img/sprites/${data.sprite}`;
+
+                document.getElementById("class-detail-card").style.backgroundImage = `url('../img/${classe}_banner.png')`;
+
+                document.getElementById("panel-class-name").textContent = data.nom;
+                document.getElementById("detail-nom").textContent = data.nom;
+                document.getElementById("detail-role").textContent = data.role;
+                document.getElementById("val-pv").textContent = data.pv;
+                document.getElementById("val-res").textContent = data.res;
+                document.getElementById("val-dmg").textContent = data.dmg;
+                document.getElementById("val-spd").textContent = data.spd.toFixed(1);
+
+                document.getElementById("bar-pv").style.width = (data.pv / 400 * 100) + "%";
+                document.getElementById("bar-res").style.width = (data.res / 30 * 100) + "%";
+                document.getElementById("bar-dmg").style.width = (data.dmg / 100 * 100) + "%";
+                document.getElementById("bar-spd").style.width = (data.spd / 1.5 * 100) + "%";
+
+                const detailsContainer = document.getElementById("info-classe-details");
+                detailsContainer.innerHTML = "";
+                data.abilities.forEach(abi => {
+                    const abiItem = document.createElement("div");
+                    abiItem.className = "ability-item";
+                    abiItem.innerHTML = `
+                        <div class="ability-header">
+                            <img src="../img/icons/abilities/${abi.icon}" class="ability-icon" alt="${abi.name}">
+                            <span class="ability-name">${abi.name} <span class="ability-key">[${abi.key}]</span></span>
+                        </div>
+                        <div class="ability-desc">${abi.desc}</div>
+                    `;
+                    detailsContainer.appendChild(abiItem);
+                });
+            };
+
+            /* 8.4. GESTION DES ÉVÉNEMENTS ET RÉSEAU */
+            if (!equipeChoisie) { window.location.href = "../index.html"; return; }
+            document.querySelector('.main-layout').setAttribute('data-team', equipeChoisie);
+            document.getElementById("team-info").textContent = `ÉQUIPE : ${equipeChoisie.toUpperCase()}`;
+
+            socket.emit("rejoindre_equipe", { equipe: equipeChoisie, classe: classeSelectionnee });
+
+            socket.on("membres_equipe", (membres) => {
+                const icons = document.getElementById("team-class-icons");
+                if (icons) {
+                    icons.innerHTML = "";
+                    membres.forEach(m => {
+                        const iconWrapper = document.createElement("div");
+                        iconWrapper.className = "mini-icon";
+                        const img = document.createElement("img");
+                        const characterClass = m.classe || 'hero';
+                        img.src = `../img/icons/${characterClass}_icon.png`;
+                        img.style.width = "100%"; img.style.height = "100%";
+                        img.style.objectFit = "contain"; img.style.imageRendering = "pixelated";
+                        iconWrapper.appendChild(img);
+                        icons.appendChild(iconWrapper);
+                    });
+                }
+            });
+
+            document.querySelectorAll(".classe-card").forEach(card => {
+                card.addEventListener("click", () => {
+                    document.querySelectorAll(".classe-card").forEach(c => c.classList.remove("selected"));
+                    card.classList.add("selected");
+                    classeSelectionnee = card.dataset.classe;
+                    updateUI(classeSelectionnee);
+                    socket.emit("update_lobby_classe", { classe: classeSelectionnee });
+>>>>>>> Stashed changes
                 });
             }
         });

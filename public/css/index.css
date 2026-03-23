@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 * { 
     box-sizing: border-box; 
     margin: 0; 
@@ -268,3 +269,242 @@ h1 {
         padding: 16px 24px;
     }
 }
+=======
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Silkscreen&display=swap');
+
+/* 1. RÉINITIALISATION ET BASE */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    color: #fff;
+    font-family: 'Silkscreen', sans-serif;
+    background: #000;
+    overflow: hidden;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* 2. EFFETS DE FOND */
+body::after {
+    content: "";
+    position: fixed;
+    top: -10%; left: -10%;
+    width: 120%; height: 120%;
+    background: url("../img/main_menu.png") no-repeat center/cover;
+    filter: brightness(0.8);
+    animation: float_bg 30s ease-in-out infinite alternate;
+    z-index: -2;
+    pointer-events: none;
+}
+
+@keyframes float_bg {
+    0% { transform: translate(5%, -5%); }
+    100% { transform: translate(-5%, 5%); }
+}
+
+.particle {
+    position: fixed;
+    width: 3px; height: 3px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    animation: float_vertical 6s linear infinite;
+    z-index: 0;
+    pointer-events: none;
+}
+
+@keyframes float_vertical {
+    0% { transform: translateY(100vh); opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(-100vh); opacity: 0; }
+}
+
+/* 3. CONTENU CENTRAL */
+.container {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+    padding-top: 10vh;
+    text-align: center;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.main-logo {
+    display: block;
+    margin: 0 auto 20px;
+    max-width: 200px;
+    width: 80%;
+    height: auto;
+    filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.4));
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.8s ease;
+    animation: logo_levitate 4s ease-in-out infinite alternate;
+}
+
+.main-logo.focus {
+    max-width: 380px;
+    transform: translateY(15vh);
+}
+
+@keyframes logo_levitate {
+    from { transform: translateY(0); }
+    to { transform: translateY(-15px); }
+}
+
+h1 {
+    font-size: clamp(2.5rem, 8vw, 4.5rem);
+    font-weight: 900;
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    transition: opacity 0.5s ease;
+    background: linear-gradient(
+        110deg,
+        #fff 45%,
+        #888 48%,
+        #eee 50%,
+        #888 52%,
+        #fff 55%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: metal_shine 6s linear infinite;
+    filter: drop-shadow(4px 4px 2px rgba(0, 0, 0, 0.8));
+}
+
+@keyframes metal_shine {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    transition: opacity 0.5s ease;
+}
+
+/* 4. COINS INTERACTIFS (SÉLECTION) */
+.corner-glow {
+    position: fixed;
+    width: 50vw;
+    height: 100vh;
+    top: 0;
+    bottom: 0;
+    z-index: 10;
+    transition: opacity 0.8s ease, filter 0.8s ease;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.blue-corner {
+    left: 0;
+    background: radial-gradient(
+        ellipse at 0% 100%,
+        rgba(0, 255, 255, 0.4) 0%,
+        rgba(0, 255, 255, 0.05) 50%,
+        transparent 80%
+    );
+}
+
+.red-corner {
+    right: 0;
+    background: radial-gradient(
+        ellipse at 100% 100%,
+        rgba(255, 0, 0, 0.4) 0%,
+        rgba(255, 0, 0, 0.05) 50%,
+        transparent 80%
+    );
+}
+
+.corner-glow.bright {
+    opacity: 0.8 !important;
+    z-index: 12;
+    filter: contrast(1.2) brightness(1.2);
+}
+
+.corner-glow.dim {
+    opacity: 0.1 !important;
+}
+
+/* 5. PARTICULES DES COINS */
+.pixel-particle {
+    position: absolute;
+    width: 8px; height: 8px;
+    pointer-events: none;
+    z-index: 15;
+    animation: pixel-fly 1.8s linear forwards;
+}
+
+@keyframes pixel-fly {
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) rotate(360deg); opacity: 0; }
+}
+
+/* 6. BOUTONS ET ÉLÉMENTS SUPPLÉMENTAIRES (POUR TOUTES LES PAGES) */
+.btn {
+    display: inline-block;
+    padding: 15px 35px;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #fff;
+    background: linear-gradient(45deg, #ff0000, #990000);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.3s;
+    text-decoration: none;
+}
+
+.btn:hover {
+    background: linear-gradient(45deg, #ff3333, #bb0000);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+}
+
+/* 7. ÉTIQUETTES DES ÉQUIPES */
+.team-label {
+    position: absolute;
+    bottom: 100px;
+    font-family: 'Silkscreen', sans-serif;
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    pointer-events: none;
+    white-space: nowrap;
+    transition: transform 0.5s ease, text-shadow 0.5s ease;
+    opacity: 1 !important;
+}
+
+.blue-corner .team-label {
+    left: 100px;
+    color: #00ffff;
+    text-shadow: 1px 1px 5px black;
+}
+
+.red-corner .team-label {
+    right: 100px;
+    color: #ff0000;
+    text-shadow: 1px 1px 5px black;
+}
+
+.corner-glow.bright .team-label {
+    transform: scale(1.1);
+}
+
+.blue-corner.bright .team-label {
+    text-shadow: 0 0 30px #00ffff;
+}
+
+.red-corner.bright .team-label {
+    text-shadow: 0 0 30px #ff0000;
+}
+>>>>>>> Stashed changes

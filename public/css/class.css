@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 * { 
     box-sizing: border-box; 
     margin: 0; 
@@ -327,3 +328,348 @@ input[type="text"] {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+=======
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
+
+/* 1. RÉINITIALISATION ET PARAMÈTRES GLOBAUX */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #000;
+    color: #fff;
+    font-family: 'Silkscreen', sans-serif;
+    line-height: 1.4;
+    letter-spacing: 1px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+body::after {
+    content: "";
+    position: fixed;
+    top: -10%; left: -10%;
+    width: 120%; height: 120%;
+    background: url("../img/main_menu.png") no-repeat center/cover;
+    filter: brightness(0.8);
+    animation: float_bg 30s ease-in-out infinite alternate;
+    z-index: -2;
+    pointer-events: none;
+}
+
+@keyframes float_bg {
+    0% { transform: translate(5%, -5%); }
+    100% { transform: translate(-5%, 5%); }
+}
+
+/* 2. MISE EN PAGE PRINCIPALE */
+.main-layout {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+    padding: 40px;
+    width: 100%;
+}
+
+.container {
+    flex: 1 1 auto;
+    max-width: 750px;
+    z-index: 1;
+}
+
+/* 3. EN-TÊTE DE L'ÉQUIPE */
+.team-header {
+    background: transparent;
+    padding: 30px;
+    margin-bottom: 30px;
+    text-align: center;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    transition: all 0.3s ease;
+}
+
+.main-layout[data-team="blue"] .team-header {
+    background-image: url('../img/blue_block.png');
+}
+.main-layout[data-team="red"] .team-header {
+    background-image: url('../img/red_block.png');
+}
+
+.team-info {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    color: #ffbb50;
+    text-shadow: 2px 2px 0px #000;
+}
+
+.team-icons {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    width: 100%;
+}
+
+.mini-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 42px;
+    height: 42px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid #cecece;
+    flex-shrink: 0;
+}
+
+.mini-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+/* 4. GRILLE DE SÉLECTION DES CLASSES */
+.subtitle {
+    color: #ff9b00;
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: 20px;
+    text-shadow: 1px 3px 0 #000;
+}
+
+.classes-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.classe-card {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 0 1 100px;
+    aspect-ratio: 1 / 1;
+    background: rgb(0 0 0 / 50%);
+    border: 4px solid rgb(255 255 255 / 75%);
+    cursor: pointer;
+    transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.classe-card img { width: 80%; height: 80%; object-fit: contain; image-rendering: pixelated; }
+.classe-card:hover, .classe-card.selected {
+    transform: translateY(-5px);
+    border-color: #ff9b00;
+    background: rgba(255, 193, 0, 0.2);
+}
+
+/* 5. CARTE DES STATISTIQUES */
+.class-detail-card {
+    background: transparent;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    border: none;
+    padding: 40px 50px;
+    margin-bottom: 30px;
+    text-align: left;
+    transition: background-image 0.3s ease;
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 10px;
+    margin-bottom: 25px;
+    border-bottom: 2px solid rgb(255 255 0 / 20%);
+}
+
+.detail-header h2 { color: #ff9b00; font-size: 1.6rem; text-shadow: 1px 1px 1px black;}
+#detail-role {
+    color: #ff9b00;
+    font-size: 1.5rem;
+    text-shadow: 1px 1px 2px black;
+}
+
+.stats-bars-v2 {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.bar-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.stat-icon {
+    width: 32px;
+    height: 32px;
+    image-rendering: pixelated;
+    flex-shrink: 0;
+}
+
+.bar-wrap {
+    flex-grow: 1;
+}
+
+.bar {
+    height: 24px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+    position: relative;
+}
+
+.bar div {
+    height: 100%;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fill-pv  { background: #ff3e3e; box-shadow: inset -5px 0 0 #b32a2a; }
+.fill-res { background: #ffcc00; box-shadow: inset -5px 0 0 #c49a00; }
+.fill-dmg { background: #ff8400; box-shadow: inset -5px 0 0 #b35d00; }
+.fill-spd { background: #00ccff; box-shadow: inset -5px 0 0 #0099bf; }
+
+.stat-value {
+    font-size: 1.1rem;
+    min-width: 50px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* 6. PANNEAU DROIT */
+.info-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 40%;
+    min-height: 90dvh;
+    padding: 30px;
+}
+
+.sprite-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 250px;
+    margin-bottom: 25px;
+}
+
+.sprite-display img { height: 100%; filter: drop-shadow(0 0 15px #000); image-rendering: pixelated; }
+
+.panel-title { color: #ff9b00; font-size: 1.8rem; text-align: center; margin-bottom: 20px; }
+.ability-text { color: #ccc; font-size: 1rem; line-height: 1.6; }
+
+/* 7. ENTRÉES ET BOUTONS */
+input[type="text"] {
+    width: 100%;
+    background: rgba(255,255,255,0.1);
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    color: #fff;
+    font-family: 'Silkscreen', sans-serif;
+    font-size: 1.2rem;
+    padding: 15px;
+    outline: none;
+    margin-bottom: 25px;
+}
+
+input::placeholder { color: rgba(255, 255, 255, 0.8); font-size: 1.2rem; }
+
+.main-layout[data-team="blue"] #btn-connexion { background: #0080ff; }
+.main-layout[data-team="red"] #btn-connexion { background: #ff0000; }
+
+.btn {
+    flex: 1 1 auto;
+    color: #fff;
+    font-family: 'Silkscreen';
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 18px 30px;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-back { background: #333; }
+.btn:hover { background: #fff; color: #000; transform: scale(1.02); }
+
+#info-classe-details {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.ability-item {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 12px;
+    border-bottom: 5px solid #ff9b00;
+    transition: background 0.3s;
+}
+
+.ability-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 8px;
+}
+
+.ability-icon {
+    width: 80px;
+    height: 80px;
+    background: transparent;
+    image-rendering: pixelated;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.ability-name {
+    font-size: 1.5rem;
+    color: #ff9b00;
+    text-transform: uppercase;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px black;
+}
+
+.ability-key {
+    color: #fff;
+    font-size: 1.5rem;
+    opacity: 0.7;
+}
+
+.ability-desc {
+    font-size: 1.2rem;
+    color: #bbb;
+    line-height: 1.4;
+    padding-left: 2px;
+    text-shadow: 1px 1px 1px black;
+}
+
+/* 8. RESPONSIVE */
+@media (max-width: 1000px) {
+    .main-layout { flex-direction: column; align-items: center; }
+    .container, .info-panel { width: 100%; height: auto; min-height: auto; }
+}
+>>>>>>> Stashed changes
