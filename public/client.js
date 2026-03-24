@@ -864,6 +864,7 @@ function creerEffetZoneFeu(x, y, rayon, duree) {
         transform: translate(-50%, -50%);
         image-rendering: pixelated;
         opacity: 0.9;
+        z-index: -100;
     `;
     arena.appendChild(div);
 
@@ -1140,7 +1141,7 @@ function creerElementZonePersistante(zp) {
     if (estZoneFeu) {
         // La durée sera gérée par la disparition de la zone elle-même
         // On crée l'effet avec une longue durée et on le supprime quand la zone disparaît
-        creerEffetZoneFeu(zp.x, zp.y, zp.rayon, 10000);
+        creerEffetZoneFeu(zp.x, zp.y, zp.rayon+20, 10000);
         div._zoneFeuCle = `zonefeu_${zp.x}_${zp.y}`;
     }
 }
