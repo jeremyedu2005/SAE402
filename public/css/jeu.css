@@ -7,7 +7,7 @@ body {
 }
 
 .arena {
-    background-image: url('../img/battle_map_6.png');
+    /* background-image défini dynamiquement par jeu.html via localStorage */
     background-size: cover;
     background-position: center;
     width:6900px;  

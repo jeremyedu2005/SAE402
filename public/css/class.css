@@ -1,329 +1,390 @@
-* { 
-    box-sizing: border-box; 
-    margin: 0; 
-    padding: 0; 
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
+
+/* 1. RÉINITIALISATION ET PARAMÈTRES GLOBAUX */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    background: radial-gradient(circle at center, #000 0%, #111 50%, #000 100%);
+    background: #000;
     color: #fff;
-    font-family: 'Orbitron', monospace;
-    overflow-x: hidden;       /* était overflow:hidden — on garde juste X */
-    overflow-y: auto;         /* scroll vertical autorisé */
-    position: relative;
-    min-height: 100vh;        /* était height:100vh fixe */
+    font-family: 'Silkscreen', sans-serif;
+    line-height: 1.4;
+    letter-spacing: 1px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
-body::before {
-    content: '';
+body::after {
+    content: "";
     position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: 
-        radial-gradient(circle at 30% 30%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 70% 70%, rgba(255, 68, 68, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(255, 255, 0, 0.05) 0%, transparent 70%);
-    animation: pulse 4s ease-in-out infinite alternate;
-    z-index: -1;
-}
-
-@keyframes pulse { 0% { opacity: 0.3; } 100% { opacity: 0.7; } }
-
-/* ── Layout principal ── */
-.main-layout {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;  /* était center — évite l'étirement vertical */
-    min-height: 100vh;        /* était height:100vh fixe */
-    gap: 40px;
-    padding: 40px;
-}
-
-.container { 
-    position: relative; 
-    width: 100%;
-    max-width: 750px; 
-    text-align: center; 
-    z-index: 1;
-}
-
-/* ── Titre ── */
-h1 {
-    font-size: clamp(1.5rem, 5vw, 3rem);
-    font-weight: 900;
-    background: linear-gradient(45deg, #ff0000, #00ffff, #ffff00, #ff00ff);
-    background-size: 400% 400%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: gradientShift 3s ease-in-out infinite;
-    text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
-    margin-bottom: 20px;
-    letter-spacing: 5px;
-}
-
-@keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-
-/* ── Équipe ── */
-.team-info { 
-    font-size: clamp(0.9rem, 2.5vw, 1.5rem);
-    font-weight: 700; 
-    margin-bottom: 20px; 
-    text-transform: uppercase; 
-    letter-spacing: 3px; 
-}
-.team-info[data-team="blue"] { 
-    color: #00ffff; 
-    text-shadow: 0 0 20px #00ffff; 
-}
-.team-info[data-team="red"] { 
-    color: #ff4444; 
-    text-shadow: 0 0 20px #ff4444; 
-}
-
-/* ── Membres ── */
-.members {
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(20, 20, 20, 0.9));
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 15px; 
-    padding: 20px; 
-    margin-bottom: 20px; 
-    text-align: left;
-}
-
-.member-list { 
-    list-style: none; 
-    display: flex; 
-    flex-wrap: wrap;
-    gap: 10px; 
-}
-.member-list li {
-    background: rgba(255, 255, 255, 0.1); 
-    padding: 8px 15px; 
-    border-radius: 20px; 
-    font-size: clamp(0.7rem, 1.5vw, 0.9rem);
-    border: 1px solid rgba(255, 255, 255, 0.2); 
-}
-
-/* ── Grille de classes ── */
-.classes-grid {
-    display: grid; 
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 20px; 
-    margin: 20px 0; 
-}
-
-.classe-card {
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(20, 20, 20, 0.9));
-    border: 3px solid transparent; 
-    border-radius: 15px; 
-    padding: 20px;
-    cursor: pointer; 
-    transition: all 0.4s;
-    text-align: center; 
-    position: relative; 
-    overflow: hidden;
-}
-.classe-card.selected { 
-    border-color: #ffff00; 
-    box-shadow: 0 0 50px rgba(255, 255, 0, 0.6); 
-}
-.classe-card:hover { 
-    transform: scale(1.05); 
-    border-color: #00ffff; 
-}
-
-/* ── Panneau de droite ── */
-.info-panel {
-    width: 380px;
-    min-width: 280px;
-    flex-shrink: 0;
-    background: rgba(10, 10, 10, 0.9);
-    border: 2px solid #00ffff;
-    border-radius: 20px;
-    padding: 30px;
-    box-shadow: 0 0 25px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1);
-}
-
-.panel-title { 
-    color: #00ffff; 
-    font-size: clamp(0.85rem, 2vw, 1.2rem);
-    margin-bottom: 20px; 
-    text-shadow: 0 0 10px #00ffff; 
-    text-align: center;
-}
-
-/* ── Clavier ZQSD ── */
-.controls-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: auto auto;
-    gap: 15px;
-    justify-items: center;
-    margin-bottom: 25px;
-}
-
-.key-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-.key-box span {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: #222;
-    border: 1px solid #444;
-    border-radius: 8px;
-    color: #ffff00;
-    font-weight: bold;
-    margin-bottom: 5px;
-    box-shadow: 0 3px 0 #000;
-}
-
-.key-box p { 
-    font-size: 0.7rem; 
-    color: #aaa; 
-    text-transform: uppercase; 
-}
-
-/* Placement ZQSD */
-.key-z { grid-column: 2; grid-row: 1; }
-.key-q { grid-column: 1; grid-row: 2; }
-.key-s { grid-column: 2; grid-row: 2; }
-.key-d { grid-column: 3; grid-row: 2; }
-
-.panel-hr {
-    border: 0; 
-    border-top: 1px solid rgba(0, 255, 255, 0.2); 
-    margin: 20px 0; 
-}
-
-.panel-class-title {
-    color: #00ffff; 
-    font-size: clamp(0.8rem, 1.8vw, 1.1rem);
-    margin-bottom: 15px;
-}
-
-.ability { 
-    margin-bottom: 12px; 
-    font-size: clamp(0.75rem, 1.5vw, 0.95rem);
-    text-align: left;
-}
-.ability strong { 
-    color: #ff4444; 
-    text-shadow: 0 0 5px rgba(255, 68, 68, 0.3); 
-}
-
-/* ── Input ── */
-input[type="text"] {
-    width: 100%; 
-    padding: 15px; 
-    background: rgba(0, 0, 0, 0.8); 
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 25px; 
-    color: #fff; 
-    font-family: 'Orbitron'; 
-    font-size: clamp(0.7rem, 1.5vw, 1rem);
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-/* ── Boutons ── */
-.actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-}
-
-.btn { 
-    padding: 15px 40px; 
-    background: linear-gradient(45deg, #ff0000, #ff4444); 
-    border: none; 
-    border-radius: 50px; 
-    color: #fff; 
-    font-family: 'Orbitron', monospace;
-    font-size: clamp(0.65rem, 1.5vw, 0.9rem);
-    font-weight: 700; 
-    cursor: pointer;
-    white-space: nowrap;
-}
-.btn-back {
-    background: linear-gradient(45deg, #444, #666); 
-    margin-left: 0;
-}
-
-/* ── Particules ── */
-.particle { 
-    position: fixed;
-    width: 4px; height: 4px; 
-    background: #fff; 
-    border-radius: 50%; 
-    animation: float 6s linear infinite;
-    z-index: 0;
+    top: -10%; left: -10%;
+    width: 120%; height: 120%;
+    background: url("../img/main_menu.png") no-repeat center/cover;
+    filter: brightness(0.8);
+    animation: float_bg 30s ease-in-out infinite alternate;
+    z-index: -2;
     pointer-events: none;
 }
 
-@keyframes float { 0% { transform: translateY(100vh); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(-10vh); opacity: 0; } }
-
-
-/* ═══════════════════════════════════════════
-   MEDIA QUERIES
-   ═══════════════════════════════════════════ */
-
-/* ── Tablette (≤ 1024px) : layout en colonne ── */
-@media (max-width: 1024px) {
-    .main-layout {
-        flex-direction: column;
-        align-items: center;
-        padding: 30px 24px;
-        gap: 30px;
-    }
-
-    .info-panel {
-        width: 100%;
-        min-width: unset;
-        max-width: 750px;
-    }
+@keyframes float_bg {
+    0% { transform: translate(5%, -5%); }
+    100% { transform: translate(-5%, 5%); }
 }
 
-/* ── Mobile (≤ 600px) ── */
-@media (max-width: 600px) {
-    .main-layout {
-        padding: 16px 12px;
-        gap: 20px;
-    }
-
-    .classes-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-    }
-
-    .classe-card {
-        padding: 14px 8px;
-    }
-
-    input[type="text"] {
-        padding: 12px;
-    }
-
-    .btn {
-        width: 100%;
-        padding: 14px;
-    }
-
-    .info-panel {
-        padding: 20px 16px;
-    }
+/* 2. MISE EN PAGE PRINCIPALE */
+.main-layout {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+    padding: 40px;
+    width: 100%;
 }
 
-/* ── Très petits écrans (≤ 360px) ── */
-@media (max-width: 360px) {
-    .classes-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+.container {
+    flex: 1 1 auto;
+    max-width: 750px;
+    z-index: 1;
+}
+
+/* 3. EN-TÊTE DE L'ÉQUIPE */
+.team-header {
+    background: transparent;
+    padding: 30px;
+    margin-bottom: 30px;
+    text-align: center;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    transition: all 0.3s ease;
+}
+
+.main-layout[data-team="blue"] .team-header {
+    background-image: url('../img/blue_block.png');
+}
+.main-layout[data-team="red"] .team-header {
+    background-image: url('../img/red_block.png');
+}
+
+.team-info {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    color: #ffbb50;
+    text-shadow: 2px 2px 0px #000;
+}
+
+.team-icons {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    width: 100%;
+}
+
+.mini-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 42px;
+    height: 42px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid #cecece;
+    flex-shrink: 0;
+}
+
+.mini-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+/* 4. GRILLE DE SÉLECTION DES CLASSES */
+.subtitle {
+    color: #ff9b00;
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: 20px;
+    text-shadow: 1px 3px 0 #000;
+}
+
+.classes-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.classe-card {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 0 1 100px;
+    aspect-ratio: 1 / 1;
+    background: rgb(0 0 0 / 50%);
+    border: 4px solid rgb(255 255 255 / 75%);
+    cursor: pointer;
+    transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.classe-card img { width: 80%; height: 80%; object-fit: contain; image-rendering: pixelated; }
+.classe-card:hover, .classe-card.selected {
+    transform: translateY(-5px);
+    border-color: #ff9b00;
+    background: rgba(255, 193, 0, 0.2);
+}
+
+/* 5. CARTE DES STATISTIQUES */
+.class-detail-card {
+    background: transparent;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    border: none;
+    padding: 40px 50px;
+    margin-bottom: 30px;
+    text-align: left;
+    transition: background-image 0.3s ease;
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 10px;
+    margin-bottom: 25px;
+    border-bottom: 2px solid rgb(255 255 0 / 20%);
+}
+
+.detail-header h2 { color: #ff9b00; font-size: 1.6rem; text-shadow: 1px 1px 1px black;}
+#detail-role {
+    color: #ff9b00;
+    font-size: 1.5rem;
+    text-shadow: 1px 1px 2px black;
+}
+
+.stats-bars-v2 {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.bar-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.stat-icon {
+    width: 32px;
+    height: 32px;
+    image-rendering: pixelated;
+    flex-shrink: 0;
+}
+
+.bar-wrap {
+    flex-grow: 1;
+}
+
+.bar {
+    height: 24px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+    position: relative;
+}
+
+.bar div {
+    height: 100%;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fill-pv  { background: #ff3e3e; box-shadow: inset -5px 0 0 #b32a2a; }
+.fill-res { background: #ffcc00; box-shadow: inset -5px 0 0 #c49a00; }
+.fill-dmg { background: #ff8400; box-shadow: inset -5px 0 0 #b35d00; }
+.fill-spd { background: #00ccff; box-shadow: inset -5px 0 0 #0099bf; }
+
+.stat-value {
+    font-size: 1.1rem;
+    min-width: 50px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* 6. PANNEAU DROIT */
+.info-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 40%;
+    min-height: 90dvh;
+    padding: 30px;
+}
+
+.sprite-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 250px;
+    margin-bottom: 25px;
+}
+
+.sprite-display img { height: 100%; filter: drop-shadow(0 0 15px #000); image-rendering: pixelated; }
+
+.panel-title { color: #ff9b00; font-size: 1.8rem; text-align: center; margin-bottom: 20px; }
+.ability-text { color: #ccc; font-size: 1rem; line-height: 1.6; }
+
+/* 7. ENTRÉES ET BOUTONS */
+input[type="text"] {
+    width: 100%;
+    background: rgba(255,255,255,0.1);
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    color: #fff;
+    font-family: 'Silkscreen', sans-serif;
+    font-size: 1.2rem;
+    padding: 15px;
+    outline: none;
+    margin-bottom: 25px;
+}
+
+input::placeholder { color: rgba(255, 255, 255, 0.8); font-size: 1.2rem; }
+
+.main-layout[data-team="blue"] #btn-connexion { background: #0080ff; }
+.main-layout[data-team="red"] #btn-connexion { background: #ff0000; }
+
+.btn {
+    flex: 1 1 auto;
+    color: #fff;
+    font-family: 'Silkscreen';
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 18px 30px;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-back { background: #333; }
+.btn:hover { background: #fff; color: #000; transform: scale(1.02); }
+
+#info-classe-details {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.ability-item {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 12px;
+    border-bottom: 5px solid #ff9b00;
+    transition: background 0.3s;
+}
+
+.ability-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 8px;
+}
+
+.ability-icon {
+    width: 80px;
+    height: 80px;
+    background: transparent;
+    image-rendering: pixelated;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.ability-name {
+    font-size: 1.5rem;
+    color: #ff9b00;
+    text-transform: uppercase;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px black;
+}
+
+.ability-key {
+    color: #fff;
+    font-size: 1.5rem;
+    opacity: 0.7;
+}
+
+.ability-desc {
+    font-size: 1.2rem;
+    color: #bbb;
+    line-height: 1.4;
+    padding-left: 2px;
+    text-shadow: 1px 1px 1px black;
+}
+
+/* 8. BOUTON CHANGEMENT DE MAP */
+.mapChange {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 100;
+}
+
+.mapChange button {
+    font-family: 'Silkscreen', sans-serif;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.6);
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 1px;
+    width: 100%;
+}
+
+.mapChange button::before {
+    content: "CHANGER MAP";
+}
+
+.mapChange button:hover {
+    background: rgba(255, 155, 0, 0.3);
+    border-color: #ff9b00;
+    color: #ff9b00;
+    transform: translateY(-3px);
+}
+
+.mapChange h5 {
+    font-family: 'Silkscreen', sans-serif;
+    font-size: 0.85rem;
+    color: #ffbb50;
+    text-shadow: 1px 1px 0 #000;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+/* 9. RESPONSIVE */
+@media (max-width: 1000px) {
+    .main-layout { flex-direction: column; align-items: center; }
+    .container, .info-panel { width: 100%; height: auto; min-height: auto; }
 }
