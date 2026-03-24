@@ -3,204 +3,277 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Choix de Classe — Arena Clash</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>Arcane Clash</title>
+	<link rel="icon" type="image/x-icon" href="/img/arcane_clash.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/class.css">
 </head>
 <body>
-    <div class="particle" style="left: 5%; animation-delay: 0s;"></div>
-    <div class="particle" style="left: 25%; animation-delay: 2s;"></div>
-    <div class="particle" style="left: 45%; animation-delay: 4s;"></div>
-    <div class="particle" style="left: 65%; animation-delay: 6s;"></div>
-    <div class="particle" style="left: 85%; animation-delay: 8s;"></div>
-
     <div class="main-layout">
         <div class="container">
-            <h1>⚔️ ARÈNE</h1>
-            <div class="team-info" id="team-info" data-team="">Équipe : Chargement...</div>
-            
-            <div class="members">
-                <h3>Membres de votre équipe</h3>
-                <ul class="member-list" id="member-list">
-                    <li>Chargement...</li>
-                </ul>
+            <div class="team-header">
+                <div class="team-info" id="team-info">Chargement...</div>
+                <div class="team-icons" id="team-class-icons"></div>
             </div>
 
             <p class="subtitle">Choisissez votre classe</p>
+
             <div class="classes-grid">
-                <div class="classe-card selected" data-classe="hero">
-                    <div class="icone">🗡️</div>
-                    <div class="nom">Héros</div>
-                    <div class="stats">PV: 300 | RES: 20</div>
+                <div class="classe-card selected" data-classe="hero"><img src="../img/icons/hero_icon.png" alt="Heros"></div>
+                <div class="classe-card" data-classe="mage_feu"><img src="../img/icons/mage_feu_icon.png" alt="Mage Feu"></div>
+                <div class="classe-card" data-classe="mage_glace"><img src="../img/icons/mage_glace_icon.png" alt="Mage Glace"></div>
+                <div class="classe-card" data-classe="archer"><img src="../img/icons/archer_icon.png" alt="Archer"></div>
+                <div class="classe-card" data-classe="guerrier" style="display: none;"><img src="../img/icons/guerrier_icon.png" alt="Guerrier"></div>
+                <div class="classe-card" data-classe="goblin"><img src="../img/icons/goblin_icon.png" alt="Goblin"></div>
+            </div>
+
+            <div class="class-detail-card" id="class-detail-card">
+                <div class="detail-header">
+                    <h2 id="detail-nom">HEROS</h2>
+                    <span id="detail-role">TANK / DPS</span>
                 </div>
-                <div class="classe-card" data-classe="mage_feu">
-                    <div class="icone">🔥</div>
-                    <div class="nom">Mage de Feu</div>
-                    <div class="stats">PV: 200 | RES: 10</div>
-                </div>
-                <div class="classe-card" data-classe="mage_glace">
-                    <div class="icone">❄️</div>
-                    <div class="nom">Mage de Glace</div>
-                    <div class="stats">PV: 200 | RES: 10</div>
-                </div>
-                <div class="classe-card" data-classe="archer">
-                    <div class="icone">🏹</div>
-                    <div class="nom">Archer</div>
-                    <div class="stats">PV: 220 | RES: 12</div>
-                </div>
-                <div class="classe-card" data-classe="goblin">
-                    <div class="icone">🗡️🐢</div>
-                    <div class="nom">Goblin</div>
-                    <div class="stats">PV: 160 | RES: 15 | VIT: ×1.5</div>
+
+                <div class="stats-bars-v2">
+                    <div class="bar-container">
+                        <img src="../img/icons/stats/hp.png" class="stat-icon" alt="HP">
+                        <div class="bar-wrap">
+                            <div class="bar"><div id="bar-pv" class="fill-pv"></div></div>
+                        </div>
+                        <span class="stat-value" id="val-pv">300</span>
+                    </div>
+                    <div class="bar-container">
+                        <img src="../img/icons/stats/res.png" class="stat-icon" alt="RES">
+                        <div class="bar-wrap">
+                            <div class="bar"><div id="bar-res" class="fill-res"></div></div>
+                        </div>
+                        <span class="stat-value" id="val-res">20</span>
+                    </div>
+                    <div class="bar-container">
+                        <img src="../img/icons/stats/dmg.png" class="stat-icon" alt="DMG">
+                        <div class="bar-wrap">
+                            <div class="bar"><div id="bar-dmg" class="fill-dmg"></div></div>
+                        </div>
+                        <span class="stat-value" id="val-dmg">60</span>
+                    </div>
+                    <div class="bar-container">
+                        <img src="../img/icons/stats/spd.png" class="stat-icon" alt="SPD">
+                        <div class="bar-wrap">
+                            <div class="bar"><div id="bar-spd" class="fill-spd"></div></div>
+                        </div>
+                        <span class="stat-value" id="val-spd">1.0</span>
+                    </div>
                 </div>
             </div>
 
-            <label for="nom">Ton nom de joueur</label>
-            <input type="text" id="nom" placeholder="Ex : ShadowBlade99" maxlength="20" />
-            <p class="erreur" id="erreur">Merci d'entrer un nom de joueur.</p>
-            
+            <div class="input-group">
+                <input type="text" id="nom" placeholder="Ton pseudo..." maxlength="20" />
+                <p class="erreur" id="erreur" style="display:none;">Merci d'entrer un nom.</p>
+            </div>
+
             <div class="actions">
-                <button class="btn" id="btn-connexion">ENTRER DANS L'ARÈNE</button>
-                <button class="btn btn-back" id="btn-back">Retour</button>
+                <button class="btn" id="btn-connexion">ENTRER DANS L'ARENE</button>
+                <button class="btn btn-back" id="id-back">Retour</button>
             </div>
         </div>
 
         <div id="info-panel" class="info-panel">
             <div class="panel-content">
-                <h2 class="panel-title">🎮 COMMANDES</h2>
-                
-                <div class="controls-grid">
-                    <div class="key-box key-z"><span>Z</span><p>Avancer</p></div>
-                    <div class="key-box key-q"><span>Q</span><p>Gauche</p></div>
-                    <div class="key-box key-s"><span>S</span><p>Reculer</p></div>
-                    <div class="key-box key-d"><span>D</span><p>Droite</p></div>
+                <div class="sprite-display">
+                    <img src="../img/sprites/hero.png" id="class-sprite" alt="Class Sprite">
                 </div>
-
-                <hr class="panel-hr">
-                <h2 id="info-classe-nom" class="panel-class-title">CLASSE : HÉROS</h2>
-                <div id="info-classe-details"></div>
+                <h2 class="panel-title" id="panel-class-name">COMMANDES</h2>
+                <div id="info-classe-details" class="ability-list"></div>
             </div>
         </div>
+    </div>
+    <div class="mapChange">
+        <button id="btn-map-toggle"></button>
+        <h5 id="map-label">Map : été</h5>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
-        let classeSelectionnee = "hero";
-        const equipeChoisie = localStorage.getItem("equipeChoisie");
+        window.addEventListener('DOMContentLoaded', () => {
+            /* 8.1. INITIALISATION ET VARIABLES */
+            const socket = io();
+            let classeSelectionnee = "hero";
+            const equipeChoisie = localStorage.getItem("equipeChoisie");
 
-        const descriptions = {
-            hero: {
-                nom: "HÉROS",
-                details: `
-                    <div class="ability"><strong>Clic G :</strong> Coup d'épée — Arc de cercle devant soi</div>
-                    <div class="ability"><strong>Clic D :</strong> Bouclier — Immunité aux dégâts (ralentit, maintenir)</div>
-                    <div class="ability"><strong>Espace :</strong> Dash — Esquive rapide avec invincibilité</div>
-                `
-            },
-            mage_feu: {
-                nom: "MAGE DE FEU",
-                details: `
-                    <div class="ability"><strong>Clic G :</strong> Boule de feu — Projectile enflammé</div>
-                    <div class="ability"><strong>Clic D :</strong> Météore — Impact + zone de brûlure persistante</div>
-                    <div class="ability"><strong>Espace :</strong> Téléportation — Déplacement instantané</div>
-                `
-            },
-            mage_glace: {
-                nom: "MAGE DE GLACE",
-                details: `
-                    <div class="ability"><strong>Clic G :</strong> Éclats de glace — Projectile qui explose en éventail</div>
-                    <div class="ability"><strong>Clic D :</strong> Rayon de glace — Laser instantané</div>
-                    <div class="ability"><strong>Espace :</strong> Téléportation — Déplacement instantané</div>
-                `
-            },
-            archer: {
-                nom: "ARCHER",
-                details: `
-                    <div class="ability"><strong>Clic G :</strong> Flèche — Tir rapide et précis</div>
-                    <div class="ability"><strong>Clic D :</strong> Pluie de flèches — Zone de dégâts ciblée</div>
-                    <div class="ability"><strong>Espace :</strong> Dash — Esquive avec invincibilité</div>
-                `
-            },
-            guerrier: {
-                nom: "GUERRIER",
-                details: `
-                    <div class="ability"><strong>Clic G :</strong> Coup d'épée — Large arc de cercle</div>
-                    <div class="ability"><strong>Clic D :</strong> Frappe au sol — Explosion centrée sur soi</div>
-                    <div class="ability"><strong>Espace :</strong> Sprint — Boost de vitesse temporaire</div>
-                `
-            },
-            goblin: {
-                nom: "GOBLIN",
-                details: `
-                    <div class="ability"><strong>Clic G :</strong> Poignardage — Coup de dague courte portée, ralentit la cible</div>
-                    <div class="ability"><strong>Clic D :</strong> Poignard empoisonné — Coup de dague, applique un poison</div>
-                    <div class="ability"><strong>Espace :</strong> Double Dash — Deux esquives rapides (2s entre les deux)</div>
-                `
-            }
-        };
+            /* 8.2. DONNEES DES CLASSES */
+            const classData = {
+                hero: {
+                    nom: "HEROS", pv: 300, res: 20, dmg: 60, spd: 1.0, role: "Equilibre", sprite: "hero.png",
+                    abilities: [
+                        { name: "Coup d'epee", key: "Clic gauche", desc: "Un coup puissant en arc de cercle devant vous." },
+                        { name: "Bouclier", key: "Clic droit", desc: "Reduit les degats recus et vous ralentit." },
+                        { name: "Dash", key: "Espace", desc: "Une ruee rapide dans votre direction actuelle." }
+                    ]
+                },
+                mage_feu: {
+                    nom: "MAGE DE FEU", pv: 200, res: 10, dmg: 55, spd: 1.0, role: "Burst DPS", sprite: "mage_feu.png",
+                    abilities: [
+                        { name: "Boule de feu", key: "Clic gauche", desc: "Lance un projectile enflammé" },
+                        { name: "Meteore", key: "Clic droit", desc: "Invoque un meteore creant une zone de brulure." },
+                        { name: "Teleportation", key: "Espace", desc: "Clignement instantane vers votre curseur." }
+                    ]
+                },
+                mage_glace: {
+                    nom: "MAGE DE GLACE", pv: 200, res: 10, dmg: 80, spd: 1.0, role: "Control", sprite: "mage_glace.png",
+                    abilities: [
+                        { name: "Eclats", key: "Clic gauche", desc: "Projette des pics de glace à fragmentation." },
+                        { name: "Laser", key: "Clic droit", desc: "Un rayon givrant continu qui traverse les cibles." },
+                        { name: "Teleportation", key: "Espace", desc: "Deplacement spectral a travers les obstacles." }
+                    ]
+                },
+                archer: {
+                    nom: "ARCHER", pv: 220, res: 12, dmg: 40, spd: 1.0, role: "Distance", sprite: "archer.png",
+                    abilities: [
+                        { name: "Fleche", key: "Clic gauche", desc: "Tir de precision rapide sur longue distance." },
+                        { name: "Pluie", key: "Clic droit", desc: "Une salve de fleches tombe sur la zone ciblee." },
+                        { name: "Esquive", key: "Espace", desc: "Un saut agile pour se repositionner." }
+                    ]
+                },
+                guerrier: {
+                    nom: "GUERRIER", pv: 400, res: 30, dmg: 80, spd: 1.0, role: "Tank", sprite: "guerrier.png",
+                    abilities: [
+                        { name: "Frappe", key: "Clic gauche", desc: "Un lourd coup fracassant les armures." },
+                        { name: "Onde de choc", key: "Clic droit", desc: "Frappe le sol pour repousser les ennemis." },
+                        { name: "Sprint", key: "Espace", desc: "Augmente massivement la vitesse de course." }
+                    ]
+                },
+                goblin: {
+                    nom: "GOBLIN", pv: 160, res: 15, dmg: 35, spd: 1.5, role: "Assassin", sprite: "goblin.png",
+                    abilities: [
+                        { name: "Poignard", key: "Clic gauche", desc: "Coup rapide appliquant un ralentissement." },
+                        { name: "Poignard empoisonné", key: "Clic droit", desc: "Coup rapide appliquant un poison." },
+                        { name: "Double Dash", key: "Espace", desc: "Permet de foncer deux fois de suite." }
+                    ]
+                }
+            };
 
-        function updateInfoPanel(classe) {
-            const info = descriptions[classe];
-            if (!info) return;
-            document.querySelector("#info-classe-nom").textContent = `CLASSE : ${info.nom}`;
-            document.querySelector("#info-classe-details").innerHTML = info.details;
-        }
+            /* 8.3. LOGIQUE DE L'INTERFACE UTILISATEUR */
+            const updateUI = (classe) => {
+                const data = classData[classe];
+                const spriteImg = document.getElementById("class-sprite");
+                if (spriteImg) spriteImg.src = `../img/sprites/${data.sprite}`;
 
-        if (!equipeChoisie) window.location.href = "../index.html";
-        const teamInfo = document.querySelector("#team-info");
-        teamInfo.textContent = `Équipe : ${equipeChoisie === "blue" ? "BLEUE" : "ROUGE"}`;
-        teamInfo.setAttribute("data-team", equipeChoisie);
-        socket.emit("rejoindre_equipe", { equipe: equipeChoisie });
+                document.getElementById("class-detail-card").style.backgroundImage = `url('../img/${classe}_banner.png')`;
 
-        socket.on("membres_equipe", (membres) => {
-            const list = document.querySelector("#member-list");
-            list.innerHTML = "";
-            if (membres.length === 0) {
-                list.innerHTML = "<li>Aucun membre pour le moment</li>";
-            } else {
-                membres.forEach(m => {
-                    const li = document.createElement("li");
-                    li.textContent = m.nom || "Joueur anonyme";
-                    list.appendChild(li);
+                document.getElementById("panel-class-name").textContent = data.nom;
+                document.getElementById("detail-nom").textContent = data.nom;
+                document.getElementById("detail-role").textContent = data.role;
+                document.getElementById("val-pv").textContent = data.pv;
+                document.getElementById("val-res").textContent = data.res;
+                document.getElementById("val-dmg").textContent = data.dmg;
+                document.getElementById("val-spd").textContent = data.spd.toFixed(1);
+
+                document.getElementById("bar-pv").style.width = (data.pv / 400 * 100) + "%";
+                document.getElementById("bar-res").style.width = (data.res / 30 * 100) + "%";
+                document.getElementById("bar-dmg").style.width = (data.dmg / 100 * 100) + "%";
+                document.getElementById("bar-spd").style.width = (data.spd / 1.5 * 100) + "%";
+
+                const detailsContainer = document.getElementById("info-classe-details");
+                
+                // Ajout statique de la capacité de mouvement pour toutes les classes
+                detailsContainer.innerHTML = `
+                    <div class="ability-item">
+                        <div class="ability-header">
+                            <span class="ability-name">Mouvement <span class="ability-key">[ZQSD]</span></span>
+                        </div>
+                        <div class="ability-desc">Permet de se déplacer dans l'arène.</div>
+                    </div>
+                `;
+
+                data.abilities.forEach(abi => {
+                    const abiItem = document.createElement("div");
+                    abiItem.className = "ability-item";
+                    abiItem.innerHTML = `
+                        <div class="ability-header">
+                            <span class="ability-name">${abi.name} <span class="ability-key">[${abi.key}]</span></span>
+                        </div>
+                        <div class="ability-desc">${abi.desc}</div>
+                    `;
+                    detailsContainer.appendChild(abiItem);
                 });
-            }
-        });
+            };
 
-        document.querySelectorAll(".classe-card").forEach((card) => {
-            card.addEventListener("click", () => {
-                document.querySelectorAll(".classe-card").forEach(c => c.classList.remove("selected"));
-                card.classList.add("selected");
-                classeSelectionnee = card.dataset.classe;
-                updateInfoPanel(classeSelectionnee);
+            /* 8.4. GESTION DES EVENEMENTS ET RESEAU */
+            if (!equipeChoisie) { window.location.href = "../index.html"; return; }
+            document.querySelector('.main-layout').setAttribute('data-team', equipeChoisie);
+            
+            // Traduction de l'affichage de l'equipe (red -> bleu, red -> rouge)
+            let equipeAffichage = equipeChoisie;
+            if (equipeChoisie === "blue") equipeAffichage = "bleue";
+            if (equipeChoisie === "red") equipeAffichage = "rouge";
+            document.getElementById("team-info").textContent = `EQUIPE : ${equipeAffichage.toUpperCase()}`;
+
+            socket.emit("rejoindre_equipe", { equipe: equipeChoisie, classe: classeSelectionnee });
+
+            socket.on("membres_equipe", (membres) => {
+                const icons = document.getElementById("team-class-icons");
+                if (icons) {
+                    icons.innerHTML = "";
+                    membres.forEach(m => {
+                        const iconWrapper = document.createElement("div");
+                        iconWrapper.className = "mini-icon";
+                        const img = document.createElement("img");
+                        const characterClass = m.classe || 'hero';
+                        img.src = `../img/icons/${characterClass}_icon.png`;
+                        img.style.width = "100%"; img.style.height = "100%";
+                        img.style.objectFit = "contain"; img.style.imageRendering = "pixelated";
+                        iconWrapper.appendChild(img);
+                        icons.appendChild(iconWrapper);
+                    });
+                }
             });
-            card.addEventListener("mouseenter", () => updateInfoPanel(card.dataset.classe));
-            card.addEventListener("mouseleave", () => updateInfoPanel(classeSelectionnee));
+
+            document.querySelectorAll(".classe-card").forEach(card => {
+                card.addEventListener("click", () => {
+                    document.querySelectorAll(".classe-card").forEach(c => c.classList.remove("selected"));
+                    card.classList.add("selected");
+                    classeSelectionnee = card.dataset.classe;
+                    updateUI(classeSelectionnee);
+                    socket.emit("update_lobby_classe", { classe: classeSelectionnee });
+                });
+                card.addEventListener("mouseenter", () => updateUI(card.dataset.classe));
+                card.addEventListener("mouseleave", () => updateUI(classeSelectionnee));
+            });
+
+            document.getElementById("btn-connexion").addEventListener("click", () => {
+                const nom = document.getElementById("nom").value.trim();
+                if (!nom) { document.getElementById("erreur").style.display = "block"; return; }
+                localStorage.setItem("nomJoueur", nom);
+                localStorage.setItem("classeChoisie", classeSelectionnee);
+                socket.emit("rejoindre", { nomJoueur: nom, classe: classeSelectionnee, equipe: equipeChoisie });
+            });
+
+            socket.on("rejoindre_ok", () => window.location.href = "jeu.html");
+            document.getElementById("id-back").addEventListener("click", () => window.location.href = "../index.html");
+
+            updateUI(classeSelectionnee);
+
+            /* 8.5. TOGGLE DE MAP */
+            const maps = [
+                { key: "ete",   label: "Map : été",   file: "battle_map_6.png" },
+                { key: "hiver", label: "Map : hiver", file: "battle_map_hiver.png" }
+            ];
+            let mapIndex = localStorage.getItem("mapChoisie") === "hiver" ? 1 : 0;
+
+            const btnMap   = document.getElementById("btn-map-toggle");
+            const mapLabel = document.getElementById("map-label");
+
+            const refreshMap = () => {
+                mapLabel.textContent = maps[mapIndex].label;
+                localStorage.setItem("mapChoisie", maps[mapIndex].key);
+            };
+
+            refreshMap(); // Applique l'état sauvegardé au chargement
+
+            btnMap.addEventListener("click", () => {
+                mapIndex = (mapIndex + 1) % maps.length;
+                refreshMap();
+            });
         });
-
-        document.querySelector("#btn-connexion").addEventListener("click", () => {
-            const nom = document.querySelector("#nom").value.trim();
-            if (!nom) { document.querySelector("#erreur").style.display = "block"; return; }
-            document.querySelector("#erreur").style.display = "none";
-            localStorage.setItem("nomJoueur", nom);
-            localStorage.setItem("classeChoisie", classeSelectionnee);
-            socket.emit("rejoindre", { nomJoueur: nom, classe: classeSelectionnee, equipe: equipeChoisie });
-        });
-
-        document.querySelector("#nom").addEventListener("keydown", (e) => {
-            if (e.key === "Enter") document.querySelector("#btn-connexion").click();
-        });
-
-        socket.on("rejoindre_ok", () => { window.location.href = "jeu.html"; });
-        socket.on("erreur", ({ message }) => alert("Erreur : " + message));
-
-        document.querySelector("#btn-back").addEventListener("click", () => {
-            socket.disconnect();
-            window.location.href = "../index.html";
-        });
-
-        // Initialisation du panneau
-        updateInfoPanel(classeSelectionnee);
     </script>
 </body>
 </html>

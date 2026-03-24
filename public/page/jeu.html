@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multijoueur — Arena Clash</title>
+    <title>Arcane Clash</title>
     <script src="/socket.io/socket.io.js"></script>
+	<link rel="icon" type="image/x-icon" href="/img/arcane_clash.ico">
     <link rel="stylesheet" href="../css/jeu.css">
 </head>
 <body>
@@ -21,6 +22,14 @@
         if (!nomJoueur || !classeChoisie || !equipeChoisie) {
             window.location.href = "../index.html";
         }
+
+        // Applique la map choisie depuis le lobby
+        const mapChoisie = localStorage.getItem("mapChoisie") || "ete";
+        const mapFiles = { ete: "battle_map_6.png", hiver: "battle_map_hiver.png" };
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelector(".arena").style.backgroundImage =
+                `url('../img/${mapFiles[mapChoisie]}')`;
+        });
     </script>
     <script src="../client.js"></script>
     <script>
