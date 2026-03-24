@@ -172,7 +172,7 @@ const ATTAQUES = {
                 forme: "cercle_persistant",
                 degats: 8,          // dégâts par tick
                 resistance_mult: 0.5,
-                rayon: 110,
+                rayon: 130,
                 duree: 4000,        // durée totale en ms
                 tickRate: 500,      // dégâts toutes les 500ms
                 couleur: "#ff7700",
@@ -201,6 +201,7 @@ const ATTAQUES = {
             dureeMax: 1000,            // courte durée → explose rapidement
             disparitAuContact: true,
             couleur: "#aaeeff",
+            sprite: "bouledeglace.png",
             // Config de l'explosion : projette N éclats en éventail
             explosion: {
                 nbEclats:   12,        // nombre de projectiles secondaires
@@ -211,6 +212,7 @@ const ATTAQUES = {
                 dureeMax:   800,
                 couleur:    "#ccffff",
                 disparitAuContact: true,
+                sprite: "eclats.png",
             },
             cooldown: 700, couleur: "#aaeeff", label: "Éclats de glace",
         },
@@ -239,7 +241,7 @@ const ATTAQUES = {
             sprite: "fleche.png",
         },
         attaque2: {
-            type: "zone", forme: "meteorite",
+            type: "zone", forme: "pluie",
             degats: 50, resistance_mult: 1,
             rayon: 120, dureeAffichage: 1200, cooldown: 3000,
             couleur: "#f1c40f", label: "Pluie de flèches",
@@ -255,8 +257,8 @@ const ATTAQUES = {
     },
     goblin: {
         attaque1: {
-            // Laser courte portée — applique un ralentissement à la cible touchée
-            type: "zone", forme: "laser",
+            // Dague courte portée — applique un ralentissement à la cible touchée
+            type: "dague", forme: "laser", isEmp: false,
             degats: 35, resistance_mult: 1,
             longueur: 120, largeur: 50,
             dureeAffichage: 150, cooldown: 600,
@@ -270,8 +272,8 @@ const ATTAQUES = {
             },
         },
         attaque2: {
-            // Laser courte portée — applique un poison (dégâts sur la durée)
-            type: "zone", forme: "laser",
+            // Dague empoisonnée courte portée — applique un poison (dégâts sur la durée)
+            type: "dague", forme: "laser", isEmp: true,
             degats: 20, resistance_mult: 1,
             longueur: 120, largeur: 50,
             dureeAffichage: 150, cooldown: 1000,
@@ -410,7 +412,7 @@ class AttaqueZone {
         if (this.forme === "cercle") {
             return Math.sqrt((cx - this.tireurX) ** 2 + (cy - this.tireurY) ** 2) < this.rayon + CHAR_SIZE / 2;
         }
-        if (this.forme === "meteorite") {
+        if (this.forme === "meteorite" || this.forme === "pluie") {
             return Math.sqrt((cx - this.cibleX) ** 2 + (cy - this.cibleY) ** 2) < this.rayon + CHAR_SIZE / 2;
         }
         return false;
@@ -424,6 +426,7 @@ class AttaqueZone {
             rayon: this.rayon, angleOuverture: this.angleOuverture,
             longueur: this.longueur, largeur: this.largeur,
             dureeAffichage: this.dureeAffichage,
+            isEmp: this.isEmp ?? null,
         };
     }
 }
@@ -1106,6 +1109,13 @@ function lancerAttaque(socket, nomAttaque, dirX, dirY, cibleX, cibleY) {
         appliquerDegatsZone(zone);
         zonesActives[zone.id] = zone;
         console.log(`[${nomAttaque}] ${tireur.nomJoueur} (${tireur.classe}) — "${stats.label}"`);
+
+    } else if (stats.type === "dague") {
+        const zone = new AttaqueZone({ lanceurId: socket.id, equipe: tireur.equipe, classe: tireur.classe, stats, tireurX: cx, tireurY: cy, dirX: ndx, dirY: ndy, cibleX, cibleY });
+        zone.isEmp = stats.isEmp ?? false;
+        appliquerDegatsZone(zone);
+        zonesActives[zone.id] = zone;
+        console.log(`[${nomAttaque}] ${tireur.nomJoueur} (${tireur.classe}) — "${stats.label}" (isEmp: ${zone.isEmp})`);
 
     } else if (stats.type === "dash") {
         const keys = keysPressed[socket.id] || {};

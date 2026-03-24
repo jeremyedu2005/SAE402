@@ -53,6 +53,14 @@ const PERSONNAGE_SPRITES = {
         fps:        10,
         spriteSize: 80,    // taille affichée (px) — peut différer de CHAR_SIZE
     },
+    mage_glace: {
+        fichier:    "../sprites/Personnages/iceMage-run.png",
+        frameW:     170,   // largeur d'une frame source
+        frameH:     171,   // hauteur de la spritesheet source
+        frames:     6,
+        fps:        10,
+        spriteSize: 80,    // taille affichée (px) — peut différer de CHAR_SIZE
+    },
     hero: {
         fichier:    "../sprites/Personnages/knight-run.png",
         frameW:     170,   // largeur d'une frame source
@@ -71,11 +79,95 @@ const PERSONNAGE_SPRITES = {
     },
     // Autres classes à ajouter ici quand les sprites seront disponibles :
     // hero:     { fichier: "sprites/Personnages/Hero/hero-run.png", ... },
-    // mage_feu: { ... },
 };
 
 // Stocke les intervalles d'animation par joueur id
 const animIntervals = {};
+
+//==============================================
+// EFFETS VISUELS D'ATTAQUES
+// Stocke les éléments actifs par ID unique
+//==============================================
+const effetsVisuels = {}; // id -> { div/svg, cleanup }
+let effetVisuelIdCounter = 0;
+
+// Config des sprites d'attaque
+const ATTAQUE_SPRITES = {
+    // Héro
+    epee: {
+        fichier: "../sprites/Attaques/eppee.png",
+        // Rotation en arc sur la hitbox (rayon 120, angle 140°)
+    },
+    bouclier: {
+        fichier: "../sprites/Attaques/bouclier.png",
+    },
+    dash_hero: {
+        fichier: "../sprites/Attaques/dash.png",
+        frameW: 50, frameH: 300, frames: 2, 
+    },
+    dash_goblin: {
+        fichier: "../sprites/Attaques/dash.png",
+        frameW: 50, frameH: 300, frames: 2,
+    },
+    // Mage feu
+    meteorite: {
+        fichier: "../sprites/Attaques/meteorite.png",
+    },
+    pluie: {
+        fichier: "../sprites/Attaques/pluiedefleches.png",
+    },
+    zone_feu: {
+        fichier: "../sprites/Attaques/zonefeu.png",
+        frameW: null, frameH: null, frames: 3, // spritesheet 3x1 (taille calculée depuis rayon)
+    },
+    // Mage glace
+    boule_glace: {
+        fichier: "../sprites/Attaques/bouledeglace.png",
+    },
+    eclats_glace: {
+        fichier: "../sprites/Attaques/eclats.png",
+    },
+    laser_telegraphe: {
+        fichier: "../sprites/Attaques/lasertelegraphe.png",
+    },
+    laser_glace: {
+        fichier: "../sprites/Attaques/laserglace.png",
+    },
+    // Goblin
+    dague: {
+        fichier: "../sprites/Attaques/dague.png",
+    },
+    dague_emp: {
+        fichier: "../sprites/Attaques/dagueemp.png",
+    },
+    // Téléportation (mage feu + mage glace)
+    tp: {
+        fichier: "../sprites/Attaques/tp.png",
+    },
+};
+
+// Injecte les keyframes CSS pour les animations d'attaque une seule fois
+(function injecterAnimAttaques() {
+    if (document.getElementById("style-attaques")) return;
+    const style = document.createElement("style");
+    style.id = "style-attaques";
+    style.textContent = `
+        @keyframes epee-arc {
+            from { transform: translate(-50%, -50%) rotate(var(--epee-start)); }
+            to   { transform: translate(-50%, -50%) rotate(var(--epee-end)); }
+        }
+        @keyframes meteorite-descente {
+            from { transform: translate(50%, -350%) scale(3)  }
+            to   { transform: translate(-50%, 150%) scale(3)  }
+        }
+        @keyframes tp-apparition {
+            0%   { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            60%  { transform: translate(-50%, -50%) scale(1.2); opacity: 0.9; }
+            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+})();
 
 //==============================================
 // CAMÉRA
@@ -504,6 +596,8 @@ function mettreAJourPersonnage(joueur) {
         div.style.filter    = "";
         div.style.boxShadow = "0 0 16px 4px #00aaff, 0 0 4px #00aaff inset";
         if (!conf) div.style.border = "3px solid #00aaff";
+        // Crée l'effet visuel bouclier si pas encore présent
+        if (!effetsVisuels[`bouclier_${joueur.id}`]) creerEffetBouclier(joueur.id);
     } else if (joueur.boostActif) {
         div.style.opacity   = "1";
         div.style.filter    = "";
@@ -520,6 +614,8 @@ function mettreAJourPersonnage(joueur) {
         } else {
             div.style.border = joueur.id === monId ? "3px solid #00ffff" : `3px solid ${joueur.couleur}`;
         }
+        // Supprime l'effet bouclier si le bouclier vient d'être désactivé
+        if (effetsVisuels[`bouclier_${joueur.id}`]) supprimerEffetBouclier(joueur.id);
     }
 }
 
@@ -544,7 +640,7 @@ function creerElementProjectile(proj) {
     if (proj.sprite) {
         div.style.cssText = `
             position:absolute; width:${frameH}px; height:${frameH}px;
-            background-image:url('../sprites/${proj.sprite}');
+            background-image:url('../sprites/Attaques/${proj.sprite}');
             background-repeat:no-repeat; pointer-events:none; z-index:5;
             transform:translate(-50%,-50%);
         `;
@@ -579,55 +675,404 @@ function supprimerElementProjectile(id) {
 }
 
 //==============================================
+// FONCTIONS D'EFFETS VISUELS D'ATTAQUES
+//==============================================
+
+function supprimerEffetVisuel(id) {
+    const ef = effetsVisuels[id];
+    if (!ef) return;
+    if (ef.cleanup) ef.cleanup();
+    if (ef.el) ef.el.remove();
+    delete effetsVisuels[id];
+}
+
+// --- ÉPÉE : arc de rotation sur la hitbox ---
+function creerEffetEpee(joueur, zone) {
+    if (!zone) return;
+    const id = ++effetVisuelIdCounter;
+    const taille = (zone.rayon ?? 120) * 2;
+    const cx = joueur.x + CHAR_SIZE / 2;
+    const cy = joueur.y + CHAR_SIZE / 2;
+
+    const div = document.createElement("div");
+    // Angle de départ et fin : direction - ouverture → direction + ouverture
+    const dirAngle = Math.atan2(zone.dirY ?? 0, zone.dirX ?? 1) * 180 / Math.PI;
+    const ouverture = zone.angleOuverture ?? 70;
+    const startAngle = dirAngle - ouverture;
+    const endAngle   = dirAngle + ouverture;
+
+    div.style.cssText = `
+        position: absolute;
+        width: ${taille}px; height: ${taille}px;
+        background-image: url('${ATTAQUE_SPRITES.epee.fichier}');
+        background-size: contain; background-repeat: no-repeat;
+        background-position: center;
+        pointer-events: none; z-index: 8;
+        left: ${cx}px; top: ${cy}px;
+        transform-origin: center center;
+        transform: translate(-50%, -50%) rotate(${startAngle}deg);
+        image-rendering: pixelated;
+        opacity: 1;
+        --epee-start: ${startAngle+80}deg;
+        --epee-end: ${endAngle+80}deg;
+        animation: epee-arc ${zone.dureeAffichage ?? 200}ms linear forwards;
+    `;
+    arena.appendChild(div);
+
+    const timeout = setTimeout(() => supprimerEffetVisuel(id), (zone.dureeAffichage ?? 200) + 50);
+    effetsVisuels[id] = { el: div, cleanup: () => clearTimeout(timeout) };
+}
+
+// --- BOUCLIER : image qui recouvre le personnage ---
+function creerEffetBouclier(joueurId) {
+    // Supprime un éventuel ancien bouclier
+    const cleOld = `bouclier_${joueurId}`;
+    if (effetsVisuels[cleOld]) supprimerEffetVisuel(cleOld);
+
+    const el = elementsDuJeu[joueurId];
+    if (!el) return;
+    const { div } = el;
+
+    const shield = document.createElement("div");
+    const size = CHAR_SIZE * 1.6;
+    shield.style.cssText = `
+        position: absolute;
+        width: ${size}px; height: ${size}px;
+        background-image: url('${ATTAQUE_SPRITES.bouclier.fichier}');
+        background-size: contain; background-repeat: no-repeat;
+        background-position: center;
+        pointer-events: none; z-index: 9;
+        left: 50%; top: 50%;
+        transform: translate(-50%, -50%);
+        image-rendering: pixelated;
+    `;
+    div.appendChild(shield);
+    effetsVisuels[cleOld] = { el: shield, cleanup: null };
+}
+
+function supprimerEffetBouclier(joueurId) {
+    supprimerEffetVisuel(`bouclier_${joueurId}`);
+}
+
+// --- DASH : spritesheet 2x1 entre départ et arrivée ---
+function creerEffetDash(xDepart, yDepart, xArrivee, yArrivee, dureeDash) {
+    const id = ++effetVisuelIdCounter;
+
+    const frameW = 50;
+    const frameH = 300;
+
+    const dx = xArrivee - xDepart;
+    const dy = yArrivee - yDepart;
+
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+
+    const cx = xArrivee + CHAR_SIZE / 2; // 👉 on place à l’arrivée (effet propre)
+    const cy = yArrivee + CHAR_SIZE / 2;
+
+    const div = document.createElement("div");
+    div.style.cssText = `
+        position: absolute;
+        width: ${frameW}px;   /* ✅ UNE SEULE FRAME */
+        height: ${frameH}px;
+
+        background-image: url('${ATTAQUE_SPRITES.dash_hero.fichier}');
+        background-repeat: no-repeat;
+        background-size: ${frameW * 2}px ${frameH}px;
+        background-position: 0px 0px;
+
+        pointer-events: none;
+        z-index: 7;
+
+        left: ${cx}px;
+        top: ${cy}px;
+
+        transform-origin: center center;
+        transform: translate(-50%, -50%) rotate(${angle}deg);
+
+        image-rendering: pixelated;
+        opacity: 0.85;
+    `;
+    arena.appendChild(div);
+
+    // Animation 2 frames
+    let frame = 0;
+    const iv = setInterval(() => {
+        frame = (frame + 1) % 2;
+        div.style.backgroundPosition = `-${frame * frameW}px 0px`;
+    }, dureeDash / 2);
+
+    const timeout = setTimeout(() => supprimerEffetVisuel(id), dureeDash + 100);
+
+    effetsVisuels[id] = {
+        el: div,
+        cleanup: () => {
+            clearInterval(iv);
+            clearTimeout(timeout);
+        }
+    };
+}
+
+// --- MÉTÉORITE : descend du haut vers la zone ---
+function creerEffetMeteorite(cibleX, cibleY, dureeChute, isFleche = false) {
+    const id = ++effetVisuelIdCounter;
+    const taille = 120;
+
+    const spriteUrl = isFleche
+        ? ATTAQUE_SPRITES.pluie.fichier
+        : ATTAQUE_SPRITES.meteorite.fichier;
+
+    const delaiSuppression = isFleche ? dureeChute + 800 : dureeChute + 50;
+
+    const div = document.createElement("div");
+    div.style.cssText = `
+        position: absolute;
+        width: ${taille}px; height: ${taille}px;
+        background-image: url('${spriteUrl}');
+        background-size: contain; background-repeat: no-repeat;
+        background-position: center;
+        pointer-events: none; z-index: 8;
+        left: ${cibleX}px; top: ${cibleY - 300}px;
+        image-rendering: pixelated;
+        animation: meteorite-descente ${dureeChute}ms ease-in forwards;
+    `;
+    div.style.left = cibleX + "px";
+    div.style.top  = (cibleY - 300) + "px";
+    arena.appendChild(div);
+
+    const timeout = setTimeout(() => supprimerEffetVisuel(id), delaiSuppression);
+    effetsVisuels[id] = { el: div, cleanup: () => clearTimeout(timeout) };
+    return id;
+}
+
+// --- ZONE DE FEU : spritesheet 3x1 en boucle ---
+function creerEffetZoneFeu(x, y, rayon, duree) {
+    const cle = `zonefeu_${x}_${y}`;
+    if (effetsVisuels[cle]) return; // déjà créé
+
+    const taille = rayon * 2;
+    const frameW = taille; // chaque frame = diamètre de la zone
+    const div = document.createElement("div");
+    div.style.cssText = `
+        position: absolute;
+        width: ${taille}px; height: ${taille}px;
+        background-image: url('${ATTAQUE_SPRITES.zone_feu.fichier}');
+        background-size: ${taille*3}px ${taille}px;
+        background-repeat: no-repeat;
+        background-position: 0px 0px;
+        pointer-events: none; z-index: 4;
+        left: ${x}px; top: ${y}px;
+        transform: translate(-50%, -50%);
+        image-rendering: pixelated;
+        opacity: 0.9;
+    `;
+    arena.appendChild(div);
+
+    let frame = 0;
+    const iv = setInterval(() => {
+        frame = (frame + 1) % 3;
+        div.style.backgroundPosition = `-${frame * frameW}px 0px`;
+    }, 150);
+
+    const timeout = setTimeout(() => supprimerEffetVisuel(cle), duree + 100);
+    effetsVisuels[cle] = { el: div, cleanup: () => { clearInterval(iv); clearTimeout(timeout); } };
+}
+
+// --- BOULE DE GLACE : projectile avec sprite ---
+// (géré via creerElementProjectile existant — le sprite est déjà dans le code)
+// On ajoute juste la config pour les éclats
+
+// --- TÉLÉPORTATION : effet tp.png aux deux points ---
+function creerEffetTeleportation(xDepart, yDepart, xArrivee, yArrivee) {
+    [{ x: xDepart, y: yDepart }].forEach((pt, i) => {
+        const id = ++effetVisuelIdCounter;
+        const taille = 80;
+
+        const div = document.createElement("div");
+        div.style.cssText = `
+            position: absolute;
+            width: ${taille}px;
+            height: ${taille}px;
+
+            background-image: url('${ATTAQUE_SPRITES.tp.fichier}');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+
+            pointer-events: none;
+            z-index: 10;
+
+            left: ${pt.x + CHAR_SIZE / 2}px;
+            top:  ${pt.y + CHAR_SIZE / 2}px;
+
+            transform: translate(-50%, -50%); /* ✅ FIX */
+
+            image-rendering: pixelated;
+            animation: tp-apparition 500ms ease-out forwards;
+        `;
+
+        arena.appendChild(div);
+
+        const timeout = setTimeout(() => supprimerEffetVisuel(id), 550);
+
+        effetsVisuels[id] = {
+            el: div,
+            cleanup: () => clearTimeout(timeout)
+        };
+    });
+}
+
+// --- DAGUE : sprite qui sort dans la direction de l'attaque ---
+function creerEffetDague(joueur, zone, isEmpoisonne = false) {
+    const id = ++effetVisuelIdCounter;
+
+    const longueur = zone.longueur;
+    const largeur = zone.largeur;
+
+    const angle = Math.atan2(zone.dirY, zone.dirX) * 180 / Math.PI;
+
+    const cx = joueur.x + CHAR_SIZE / 2;
+    const cy = joueur.y + CHAR_SIZE / 2;
+
+    const div = document.createElement("div");
+
+    div.style.cssText = `
+        position: absolute;
+        width: ${longueur}px;
+        height: ${largeur}px;
+
+        background-image: url('${
+            isEmpoisonne
+                ? ATTAQUE_SPRITES.dague_emp.fichier
+                : ATTAQUE_SPRITES.dague.fichier
+        }');
+
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
+
+        pointer-events: none;
+        z-index: 8;
+
+        left: ${cx}px;
+        top: ${cy}px;
+
+        transform-origin: left center;
+        transform: translate(0, -50%) rotate(${angle}deg);
+
+        image-rendering: pixelated;
+    `;
+
+    arena.appendChild(div);
+
+    const timeout = setTimeout(() => supprimerEffetVisuel(id), zone.dureeAffichage);
+
+    effetsVisuels[id] = {
+        el: div,
+        cleanup: () => clearTimeout(timeout)
+    };
+}
+// --- LASER DE GLACE : sprite télégraphe + sprite laser ---
+function creerEffetLaserTelegraphe(zone) {
+    const id = ++effetVisuelIdCounter;
+    const longueur = zone.longueur ?? 1500;
+    const largeur  = zone.largeur  ?? 50;
+    const angle = Math.atan2(zone.dirY, zone.dirX) * 180 / Math.PI;
+
+    const div = document.createElement("div");
+    div.style.cssText = `
+        position: absolute;
+        width: ${longueur}px; height: ${largeur}px;
+        background-image: url('${ATTAQUE_SPRITES.laser_telegraphe.fichier}');
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
+        pointer-events: none; z-index: 7;
+        left: ${zone.tireurX}px; top: ${zone.tireurY}px;
+        transform-origin: left center;
+        transform: translate(0, -50%) rotate(${angle}deg);
+        image-rendering: pixelated;
+        opacity: 0.5;
+    `;
+    arena.appendChild(div);
+    effetsVisuels[`laser_tg_${id}`] = { el: div, cleanup: null };
+    return `laser_tg_${id}`;
+}
+
+function creerEffetLaser(zone) {
+    const id = ++effetVisuelIdCounter;
+    const longueur = zone.longueur ?? 1500;
+    const largeur  = zone.largeur  ?? 50;
+    const angle = Math.atan2(zone.dirY, zone.dirX) * 180 / Math.PI;
+
+    const div = document.createElement("div");
+    div.style.cssText = `
+        position: absolute;
+        width: ${longueur}px; height: ${largeur}px;
+        background-image: url('${ATTAQUE_SPRITES.laser_glace.fichier}');
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
+        pointer-events: none; z-index: 7;
+        left: ${zone.tireurX}px; top: ${zone.tireurY}px;
+        transform-origin: left center;
+        transform: translate(0, -50%) rotate(${angle}deg);
+        image-rendering: pixelated;
+        opacity: 1;
+    `;
+    arena.appendChild(div);
+
+    const timeout = setTimeout(() => supprimerEffetVisuel(`laser_${id}`), (zone.dureeAffichage ?? 400) + 50);
+    effetsVisuels[`laser_${id}`] = { el: div, cleanup: () => clearTimeout(timeout) };
+}
+
+//==============================================
 // ZONES (SVG)
 //==============================================
 // Sprites à afficher pour certaines zones (centrés sur le point d'impact)
-const ZONE_SPRITES = {
-    meteorite: { fichier: "pluiedefleches.png", taille: 350 },
-};
+const ZONE_SPRITES = {};
 
 function creerElementZone(zone) {
-    const spriteConf = ZONE_SPRITES[zone.forme];
     let svg = null;
     let spriteDiv = null;
 
-    if (spriteConf) {
-        // Zones avec sprite : PNG uniquement, pas de SVG (le télégraphe a déjà montré la zone)
-        spriteDiv = document.createElement("div");
-        const cx = zone.forme === "meteorite" ? zone.cibleX : zone.tireurX;
-        const cy = zone.forme === "meteorite" ? zone.cibleY : zone.tireurY;
-        spriteDiv.style.cssText = `
-            position: absolute;
-            width: ${spriteConf.taille}px; height: ${spriteConf.taille}px;
-            background-image: url('../sprites/${spriteConf.fichier}');
-            background-size: contain; background-repeat: no-repeat;
-            background-position: center;
-            pointer-events: none; z-index: 5;
-            transform: translate(-50%, -50%);
-            image-rendering: pixelated;
-        `;
-        spriteDiv.style.left = cx + "px";
-        spriteDiv.style.top  = cy + "px";
-        arena.appendChild(spriteDiv);
-    } else {
-        // Zones sans sprite : SVG classique
-        svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.style.cssText = `
-            position:absolute; left:0; top:0; width:100%; height:100%;
-            pointer-events:none; z-index:4; overflow:visible;
-        `;
-        const tag = zone.forme === "laser" ? "polygon" : "path";
-        const el  = document.createElementNS("http://www.w3.org/2000/svg", tag);
-        el.setAttribute("fill",         hexToRgba(zone.couleur, 0.45));
-        el.setAttribute("stroke",       zone.couleur);
-        el.setAttribute("stroke-width", "2");
-        if      (zone.forme === "arc")       el.setAttribute("d",      tracerArc(zone));
-        else if (zone.forme === "laser")     el.setAttribute("points", tracerLaser(zone));
-        else if (zone.forme === "cercle")    el.setAttribute("d",      tracerCercle(zone));
-        else if (zone.forme === "meteorite") el.setAttribute("d",      tracerCerclePoint(zone));
-        svg.appendChild(el);
-        arena.appendChild(svg);
+    // Coup d'épée (arc) → sprite eppee.png en rotation
+    if (zone.forme === "arc") {
+        creerEffetEpee(
+            { x: zone.tireurX - CHAR_SIZE / 2, y: zone.tireurY - CHAR_SIZE / 2 },
+            zone
+        );
     }
+
+    // Dague goblin → sprite dague ou dague_emp selon isEmp
+    if (zone.forme === "laser" && zone.isEmp !== null && zone.isEmp !== undefined) {
+        const tireur = { x: zone.tireurX - CHAR_SIZE / 2, y: zone.tireurY - CHAR_SIZE / 2 };
+        creerEffetDague(tireur, zone, zone.isEmp);
+        // Ne pas afficher le SVG laser pour la dague — retourner directement
+        const timeout = setTimeout(() => supprimerElementZone(zone.id), zone.dureeAffichage ?? 150);
+        elementesZones[zone.id] = { svg: null, spriteDiv: null, timeout };
+        return;
+    }
+
+    // Laser de glace → sprite laser
+    if (zone.forme === "laser" && zone.couleur && zone.couleur.startsWith("#88")) {
+        creerEffetLaser(zone);
+    }
+
+    // SVG classique pour toutes les zones (en fond semi-transparent)
+    svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.cssText = `
+        position:absolute; left:0; top:0; width:100%; height:100%;
+        pointer-events:none; z-index:4; overflow:visible;
+    `;
+    const tag = zone.forme === "laser" ? "polygon" : "path";
+    const el  = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    el.setAttribute("fill",         hexToRgba(zone.couleur, 0.25));
+    el.setAttribute("stroke",       zone.couleur);
+    el.setAttribute("stroke-width", "2");
+    if      (zone.forme === "arc")                        el.setAttribute("d",      tracerArc(zone));
+    else if (zone.forme === "laser")                      el.setAttribute("points", tracerLaser(zone));
+    else if (zone.forme === "cercle")                     el.setAttribute("d",      tracerCercle(zone));
+    else if (zone.forme === "meteorite")                  el.setAttribute("d",      tracerCerclePoint(zone));
+    else if (zone.forme === "pluie")                      el.setAttribute("d",      tracerCerclePoint(zone));
+    svg.appendChild(el);
+    arena.appendChild(svg);
 
     const timeout = setTimeout(() => supprimerElementZone(zone.id), zone.dureeAffichage ?? 500);
     elementesZones[zone.id] = { svg, spriteDiv, timeout };
@@ -671,6 +1116,10 @@ function creerElementZonePersistante(zp) {
     const div = document.createElement("div");
     div.dataset.zpId = zp.id;
     const diameter = zp.rayon * 2;
+
+    // Détecte si c'est une zone de feu (couleur orange/rouge du mage feu)
+    const estZoneFeu = zp.couleur && (zp.couleur.startsWith("#ff") || zp.couleur === "#ff7700");
+
     div.style.cssText = `
         position: absolute;
         width: ${diameter}px; height: ${diameter}px;
@@ -686,10 +1135,23 @@ function creerElementZonePersistante(zp) {
     div.style.opacity = zp.ratioRestant ?? 1;
     arena.appendChild(div);
     elementesZonesPersistantes[zp.id] = div;
+
+    // Sprite animé pour la zone de feu
+    if (estZoneFeu) {
+        // La durée sera gérée par la disparition de la zone elle-même
+        // On crée l'effet avec une longue durée et on le supprime quand la zone disparaît
+        creerEffetZoneFeu(zp.x, zp.y, zp.rayon, 10000);
+        div._zoneFeuCle = `zonefeu_${zp.x}_${zp.y}`;
+    }
 }
 function supprimerElementZonePersistante(id) {
     const div = elementesZonesPersistantes[id];
-    if (div) { div.remove(); delete elementesZonesPersistantes[id]; }
+    if (div) {
+        // Supprime le sprite zone feu associé si existant
+        if (div._zoneFeuCle) supprimerEffetVisuel(div._zoneFeuCle);
+        div.remove();
+        delete elementesZonesPersistantes[id];
+    }
 }
 
 //==============================================
@@ -698,6 +1160,21 @@ function supprimerElementZonePersistante(id) {
 // selon la progression du délai.
 //==============================================
 function creerElementTelegraphe(tg) {
+    // Laser de glace : utilise le sprite de télégraphe
+    let laserTgCle = null;
+    if (tg.forme === "laser" && tg.couleur && tg.couleur.startsWith("#88")) {
+        laserTgCle = creerEffetLaserTelegraphe(tg);
+    }
+
+    // Météorite : lance l'animation de chute dès le télégraphe
+    if (tg.forme === "meteorite") {
+        creerEffetMeteorite(tg.cibleX, tg.cibleY, tg.ratio < 1 ? 500 : 200, false);
+    }
+
+    if (tg.forme === "pluie") {
+        creerEffetMeteorite(tg.cibleX, tg.cibleY, tg.ratio < 1 ? 500 : 200, true);
+    }
+
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.style.cssText = `
         position: absolute; left: 0; top: 0; width: 100%; height: 100%;
@@ -730,7 +1207,7 @@ function creerElementTelegraphe(tg) {
     svg.appendChild(contour);
     arena.appendChild(svg);
 
-    elementesTelegraphes[tg.id] = { svg, fill, contour };
+    elementesTelegraphes[tg.id] = { svg, fill, contour, laserTgCle };
 }
 
 function mettreAJourTelegraphe(tg) {
@@ -742,7 +1219,11 @@ function mettreAJourTelegraphe(tg) {
 
 function supprimerElementTelegraphe(id) {
     const el = elementesTelegraphes[id];
-    if (el) { el.svg.remove(); delete elementesTelegraphes[id]; }
+    if (el) {
+        el.svg.remove();
+        if (el.laserTgCle) supprimerEffetVisuel(el.laserTgCle);
+        delete elementesTelegraphes[id];
+    }
 }
 
 function calculerPathTelegraphe(tg) {
@@ -752,6 +1233,7 @@ function calculerPathTelegraphe(tg) {
     else if (tg.forme === "laser")     return tracerLaser(zone);
     else if (tg.forme === "cercle")    return tracerCercle(zone);
     else if (tg.forme === "meteorite") return tracerCerclePoint(zone);
+    else if (tg.forme === "pluie")     return tracerCerclePoint(zone);
     return "";
 }
 
@@ -1252,6 +1734,56 @@ socket.on("partie_reset", () => {
 socket.on("attaque_ok", ({ attaque, cooldown }) => {
     const map = { attaque1: hudAttaque1, attaque2: hudAttaque2, attaque3: hudAttaque3 };
     if (map[attaque]) afficherCooldown(map[attaque], attaque, cooldown);
+
+    // Effets visuels selon classe et attaque
+    if (!monId || !mesAttaques) return;
+    const joueur = elementsDuJeu[monId];
+    if (!joueur) return;
+    const stats = mesAttaques[attaque];
+    if (!stats) return;
+
+    const classeJoueur = joueur.div.className.split(" ")[1]; // "character hero" → "hero"
+
+    // Dague goblin attaque1
+    if (classeJoueur === "goblin" && attaque === "attaque1" && stats.type === "dague") {
+        const dir = calculerDirectionDepuisMoi(derniereCursorX, derniereCursorY);
+        if (dir && maPosition) {
+            const fakeZone = {
+                longueur: stats.longueur ?? 120, largeur: stats.largeur+50 ?? 50,
+                dirX: dir.dirX, dirY: dir.dirY,
+                dureeAffichage: stats.dureeAffichage ?? 150,
+            };
+            creerEffetDague({ x: maPosition.x, y: maPosition.y }, fakeZone, false);
+        }
+    }
+    // Dague empoisonnée goblin attaque2
+    if (classeJoueur === "goblin" && attaque === "attaque2" && stats.type === "dague") {
+        const dir = calculerDirectionDepuisMoi(derniereCursorX, derniereCursorY);
+        if (dir && maPosition) {
+            const fakeZone = {
+                longueur: stats.longueur ?? 120, largeur: stats.largeur+50 ?? 50,
+                dirX: dir.dirX, dirY: dir.dirY,
+                dureeAffichage: stats.dureeAffichage ?? 150,
+            };
+            creerEffetDague({ x: maPosition.x, y: maPosition.y }, fakeZone, true);
+        }
+    }
+    // Téléportation (mage feu + mage glace attaque3)
+    if (attaque === "attaque3" && stats.estTeleportation && maPosition) {
+        const dir = calculerDirectionDepuisMoi(derniereCursorX, derniereCursorY);
+        if (dir) {
+            // Calcule la position d'arrivée approximative (distance dash)
+            const dist = stats.distance ?? 500;
+            const keys2 = {};
+            // On utilise maPosition comme départ — l'arrivée sera calculée côté serveur
+            // On affiche l'effet tp au départ immédiatement
+            const xDep = maPosition.x;
+            const yDep = maPosition.y;
+            const xArr = xDep + dir.dirX * dist;
+            const yArr = yDep + dir.dirY * dist;
+            creerEffetTeleportation(xDep, yDep, xArr, yArr);
+        }
+    }
 });
 socket.on("cooldown_actif", ({ attaque }) => {
     const map = { attaque1: hudAttaque1, attaque2: hudAttaque2, attaque3: hudAttaque3 };
@@ -1290,6 +1822,8 @@ socket.on("double_dash_fenetre_expiree", () => {
     hudAttaque3.style.boxShadow   = "";
 });
 
+let _dashDepartX = null, _dashDepartY = null;
+
 socket.on("dash_debut", ({ couleur }) => {
     if (!monId || !elementsDuJeu[monId]) return;
     const { div } = elementsDuJeu[monId];
@@ -1297,8 +1831,24 @@ socket.on("dash_debut", ({ couleur }) => {
     div.style.filter    = "brightness(1.6)";
     div.style.boxShadow = `0 0 20px 6px ${couleur}, 0 0 6px ${couleur} inset`;
     div.style.border    = `3px solid ${couleur}`;
+    // Mémorise la position de départ pour l'effet visuel dash
+    if (maPosition) {
+        _dashDepartX = maPosition.x;
+        _dashDepartY = maPosition.y;
+    }
 });
-socket.on("dash_fin", () => {});
+socket.on("dash_fin", () => {
+    // Crée l'effet visuel du dash (traînée) quand on connaît la destination
+    if (_dashDepartX !== null && maPosition) {
+        const joueur = elementsDuJeu[monId];
+        if (joueur) {
+            const attaque3 = mesAttaques?.attaque3;
+            const dureeDash = attaque3?.dureeDash ?? 200;
+            creerEffetDash(_dashDepartX, _dashDepartY, maPosition.x, maPosition.y, dureeDash);
+        }
+        _dashDepartX = null; _dashDepartY = null;
+    }
+});
 
 socket.on("rejoindre_ok", ({ monId: id, attaques, perso }) => {
     monId       = id;

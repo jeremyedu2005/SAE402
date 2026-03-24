@@ -55,3 +55,6 @@ button {
     image-rendering: pixelated; 
 }
 
+svg {
+    opacity: 0.5;
+}
