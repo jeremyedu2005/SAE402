@@ -3,40 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion — Arena Clash</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"> 
-    <link rel="stylesheet" href="css/index.css"> 
-
-
+    <title>Arcane Clash</title>
+	<link rel="icon" type="image/x-icon" href="/img/arcane_clash.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
-    <!-- Particules de fond -->
     <div class="particle" style="left: 10%; animation-delay: 0s;"></div>
-    <div class="particle" style="left: 20%; animation-delay: 1s;"></div>
     <div class="particle" style="left: 30%; animation-delay: 2s;"></div>
-    <div class="particle" style="left: 40%; animation-delay: 3s;"></div>
     <div class="particle" style="left: 50%; animation-delay: 4s;"></div>
-    <div class="particle" style="left: 60%; animation-delay: 5s;"></div>
     <div class="particle" style="left: 70%; animation-delay: 6s;"></div>
-    <div class="particle" style="left: 80%; animation-delay: 7s;"></div>
     <div class="particle" style="left: 90%; animation-delay: 8s;"></div>
 
     <div class="container">
-        <h1> Arena Clash</h1>
-        <p class="subtitle">Choisissez votre équipe</p>
-        <div class="teams-grid">
-            <div class="team-card blue" data-team="blue">
-                <div class="team-icon">🔵</div>
-                <div class="team-name">ÉQUIPE BLEUE</div>
-            </div>
-            <div class="team-card red" data-team="red">
-                <div class="team-icon">🔴</div>
-                <div class="team-name">ÉQUIPE ROUGE</div>
-            </div>
-        </div>
-        <p class="erreur" id="erreur">Veuillez choisir une équipe.</p>
-        <button class="btn" id="btn-suivant">SUIVANT</button>
+        <img src="img/arcane_clash.png" alt="Logo" class="main-logo" id="main-logo">
+        <h1 id="vanishing-h1">Arcane Clash</h1>
+        <p class="subtitle" id="vanishing-subtitle">Choisissez votre équipe</p>
     </div>
-<script src="js/index.js"></script>
+
+    <div class="corner-glow blue-corner" id="blue-corner" data-team="blue">
+        <span class="team-label">EQUIPE BLEUE</span>
+    </div>
+
+    <div class="corner-glow red-corner" id="red-corner" data-team="red">
+        <span class="team-label">EQUIPE ROUGE</span>
+    </div>
+
+    <script src="js/index.js"></script>
 </body>
 </html>
